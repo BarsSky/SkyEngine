@@ -1,0 +1,33 @@
+{
+  "run_settings": {
+    "scene_id": 27655,
+    "model_time": 1708324069,
+    "limit_run_time": 36,
+    "limit_wait_time": 20
+  },
+  "abonent_settings": {
+    "2": {
+      "stop_on_first_failure": true,
+      "schedule_time": 10,
+      "wait_abonents": [
+        "101",
+        "7"
+      ]
+    },
+    "101": {
+      "subprogs": {
+        "102": {
+          "fname": "pk_fco",
+          "fargs": "",
+          "fpath": "/usr/bin"
+        }
+      }
+    },
+    "102": {
+      "path_2_schedule": "/var/fco/scenarios/fake_all_data/000001.scn.sgk",
+      "camera_position": 2,
+      "version": 1.0
+    }
+  }
+}
+
