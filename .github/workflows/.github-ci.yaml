@@ -1,3 +1,4 @@
+#file: noinspection YAMLSchemaValidation
 name: sky engine build
 
 #run on push
@@ -8,4 +9,6 @@ jobs:
     name: build
     runs-on: self-hosted
     steps:
-      - run: cmake -B build .
+    - name: checkout and build
+      uses: actions/checkout@v2
+      run: cmake -B build .
