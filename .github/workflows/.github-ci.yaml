@@ -12,7 +12,7 @@ jobs:
     - name: checkout and build
       uses: actions/checkout@v2
 
-    - name: cmake build
+    - name: cmake build for MINGW
       run: |
-         cmake -B build .
+         cmake -G "MinGW Makefiles" -B build .
          cmake --build build --target install
