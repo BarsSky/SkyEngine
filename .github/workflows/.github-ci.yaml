@@ -15,4 +15,4 @@ jobs:
     - name: cmake build
       run: |
          cmake -B build .
-         cmake --build .build --target install
+         cmake --build build --target install
