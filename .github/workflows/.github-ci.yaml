@@ -11,4 +11,6 @@ jobs:
     steps:
     - name: checkout and build
       uses: actions/checkout@v2
+
+    - name: cmake build
       run: cmake -B build .
