@@ -1,0 +1,11 @@
+name: sky engine build
+
+#run on push
+on: push
+
+jobs:
+  build:
+    name: build
+    runs-on: self-hosted
+    steps:
+      - run: cmake -B build .
