@@ -11,7 +11,7 @@ permissions:
 jobs:
   release:
     name: Release pushed tag
-    runs-on: local-host
+    runs-on: self-hosted
     steps:
       - name: Create release
         env:
