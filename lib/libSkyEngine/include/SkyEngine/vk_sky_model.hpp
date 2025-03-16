@@ -193,6 +193,11 @@ struct UniformBufferAnimate : public uniformBuffer {
   glm::vec4 lightPos = glm::vec4(5.0f, 5.0f, 5.0f, 1.0f);
 };
 
+struct UniformBufferCompute : public uniformBuffer {
+  glm::vec2 position;
+  glm::uint id;
+};
+
 /**
  * @brief all buffers struct
  */
@@ -647,7 +652,7 @@ struct PM_IO_VULKAN_EXPORT Partical_Model_GPU : public Object {
 
   void prepareUniformBuffers();
 
-  void loadTexture(VkImageViewType type = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D) override;
+  void loadTexture(VkImageViewType type = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D)  override;
 
   void prepareParticles();
 
@@ -1220,4 +1225,80 @@ struct PM_IO_VULKAN_EXPORT Line : public Object {
   VkDeviceSize getBufferSize() override;
 
   void createAdditinalBuffer() override;
+};
+
+struct PickObject : public Object {
+
+  UniformBufferCompute ubo_compute;
+  enma::Buffer inputBuffer, outputBuffer;
+  VkDeviceMemory inputBufferMemory;
+  VkDeviceMemory outputBufferMemory;
+
+  size_t dataSize = 0;
+
+
+  PickObject();
+
+  ~PickObject() override = default;
+
+
+  void draw(VkCommandBuffer _buffer) override;
+
+  void initialization() override;
+
+  void updateMapped() override;
+
+  void preparePipeline() override;
+
+  void prepareCompute() const;
+
+  void buildComputeCommandBuffer() const;
+
+  void setDescriptorLayout() override;
+
+  void prepareUniformBuffers();
+
+  void loadTexture(VkImageViewType type = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D)  override;
+
+  void prepareBuffers();
+
+  void createDescriptorPool() override;
+
+  void createDescriptorSets() override;
+
+  void createAdditinalBuffer() override;
+
+  void acquireBarrier(VkCommandBuffer _buffer) override;
+
+  void releaseBarrier(VkCommandBuffer _buffer) override;
+
+  void createSemaphore();
+
+  VkDeviceSize getBufferSize() override;
+
+  uint32_t getTexturesSize() override;
+
+  viBuffer *getBuffer() override;
+
+  std::vector<uint32_t> *getIndices() override;
+
+  void setObjectInfo(pipeline_parameters *_parameters, VkGraphicsPipelineCreateInfo *pipelineInfo) override;
+
+  void update(float frame_time) override;
+
+  void prepare() override;
+
+  void createFramebuffers(VulkanSwapChain *vkSwapChain) override;
+
+  void createRenderPass(VkFormat format) override;
+
+  void createUniformBuffer() override;
+
+  VkDescriptorImageInfo *get_descriptor_image(size_t tex_idx) override;
+
+  void destroy() override;
+
+  void additionalDestroy() override;
+
+  void clearComputeBlock() override;
 };

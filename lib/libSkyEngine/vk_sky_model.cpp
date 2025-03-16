@@ -2961,7 +2961,7 @@ void GLTF_Model_Animate::setDescriptorLayout() {
     descriptorSetLayouts.jointMatrices,
   };
   VkPipelineLayoutCreateInfo pipelineLayoutCI = initializers::pipelineLayoutCreateInfo(setLayouts.data(),
-                                                                                       static_cast<uint32_t>(setLayouts.size()));
+    static_cast<uint32_t>(setLayouts.size()));
 
   // We will use push constants to push the local matrices of a primitive to the vertex shader
   VkPushConstantRange pushConstantRange = initializers::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT,
@@ -3082,7 +3082,6 @@ std::vector<uint32_t> *GLTF_Model_Animate::getIndices() {
 }
 
 GLTF_Model_Animate::~GLTF_Model_Animate() {
-
 }
 
 void GLTF_Model_Animate::createAdditinalBuffer() {
@@ -5618,4 +5617,171 @@ void Line::updateMapped() {
 }
 
 void Line::createAdditinalBuffer() {
+}
+
+PickObject::PickObject(): ubo_compute(), inputBufferMemory(nullptr), outputBufferMemory(nullptr) {
+}
+
+void PickObject::draw(VkCommandBuffer _buffer) {
+  vkCmdBindPipeline(_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptor, 0, nullptr);
+  vkCmdDispatch(_buffer, dataSize, 1, 1); // dataSize - количество элементов
+}
+
+void PickObject::initialization() {
+}
+
+void PickObject::updateMapped() {
+}
+
+void PickObject::preparePipeline() {
+  // Создание шейдерного модуля
+  // VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
+  // shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+  // shaderModuleCreateInfo.codeSize = sizeof(computeShaderCode);
+  // shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(computeShaderCode);
+  //
+  // vkCreateShaderModule(device, &shaderModuleCreateInfo, nullptr, &computeShaderModule);
+
+  // Создание layout pipeline
+  VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+  pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+  pipelineLayoutInfo.setLayoutCount = 1;
+  pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+
+  vkCreatePipelineLayout(vDevice->logicalDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout);
+
+  // Создание Compute Pipeline
+  VkComputePipelineCreateInfo pipelineInfo = {};
+  pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+  pipelineInfo.stage = shadersStages[0];
+  pipelineInfo.layout = pipelineLayout;
+
+  vkCreateComputePipelines(vDevice->logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline);
+}
+
+void PickObject::prepareCompute() const {
+}
+
+void PickObject::setDescriptorLayout() {
+  // Создание дескрипторного набора
+  VkDescriptorSetLayoutBinding layoutBinding = {};
+  layoutBinding.binding = 0;
+  layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  layoutBinding.descriptorCount = 1;
+  layoutBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+  VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+  layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  layoutInfo.bindingCount = 1;
+  layoutInfo.pBindings = &layoutBinding;
+
+  vkCreateDescriptorSetLayout(vDevice->logicalDevice, &layoutInfo, nullptr, &descriptorSetLayout);
+}
+
+void PickObject::prepareBuffers() {
+  // Создание буферов
+  VkBufferCreateInfo bufferInfo = {};
+  bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  bufferInfo.size = sizeof(float) * dataSize; // dataSize - размер данных
+  bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+  bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+  vkCreateBuffer(vDevice->logicalDevice, &bufferInfo, nullptr, &inputBuffer.buffer);
+  vkCreateBuffer(vDevice->logicalDevice, &bufferInfo, nullptr, &outputBuffer.buffer);
+
+  // Выделение памяти для буферов
+  VkMemoryRequirements memRequirements;
+  vkGetBufferMemoryRequirements(vDevice->logicalDevice, inputBuffer.buffer, &memRequirements);
+
+  VkMemoryAllocateInfo allocInfo = {};
+  allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  allocInfo.allocationSize = memRequirements.size;
+  allocInfo.memoryTypeIndex = vDevice->findMemoryType(memRequirements.memoryTypeBits,
+                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+  vkAllocateMemory(vDevice->logicalDevice, &allocInfo, nullptr, &inputBufferMemory);
+  vkBindBufferMemory(vDevice->logicalDevice, inputBuffer.buffer, inputBufferMemory, 0);
+
+  vkGetBufferMemoryRequirements(vDevice->logicalDevice, outputBuffer.buffer, &memRequirements);
+  allocInfo.allocationSize = memRequirements.size;
+  allocInfo.memoryTypeIndex = vDevice->findMemoryType(memRequirements.memoryTypeBits,
+                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+  vkAllocateMemory(vDevice->logicalDevice, &allocInfo, nullptr, &outputBufferMemory);
+  vkBindBufferMemory(vDevice->logicalDevice, outputBuffer.buffer, outputBufferMemory, 0);
+}
+
+void PickObject::createDescriptorPool() {
+  VkDescriptorPoolSize poolSize = {};
+  poolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  poolSize.descriptorCount = 1;
+
+  VkDescriptorPoolCreateInfo poolInfo = {};
+  poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+  poolInfo.poolSizeCount = 1;
+  poolInfo.pPoolSizes = &poolSize;
+  poolInfo.maxSets = 1;
+
+  vkCreateDescriptorPool(vDevice->logicalDevice, &poolInfo, nullptr, &descriptorPool);
+}
+
+void PickObject::createDescriptorSets() {
+  VkDescriptorSetAllocateInfo allocInfo = {};
+  allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+  allocInfo.descriptorPool = descriptorPool;
+  allocInfo.descriptorSetCount = 1;
+  allocInfo.pSetLayouts = &descriptorSetLayout;
+
+  vkAllocateDescriptorSets(vDevice->logicalDevice, &allocInfo, &descriptor);
+
+  VkDescriptorBufferInfo bufferInfo = {};
+  bufferInfo.buffer = inputBuffer.buffer;
+  bufferInfo.offset = 0;
+  bufferInfo.range = sizeof(float) * dataSize;
+
+  VkWriteDescriptorSet descriptorWrite = {};
+  descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  descriptorWrite.dstSet = descriptor;
+  descriptorWrite.dstBinding = 0;
+  descriptorWrite.dstArrayElement = 0;
+  descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  descriptorWrite.descriptorCount = 1;
+  descriptorWrite.pBufferInfo = &bufferInfo;
+
+  vkUpdateDescriptorSets(vDevice->logicalDevice, 1, &descriptorWrite, 0, nullptr);
+}
+
+void PickObject::createAdditinalBuffer() {
+}
+
+void PickObject::acquireBarrier(VkCommandBuffer _buffer) {
+  Object::acquireBarrier(_buffer);
+}
+
+void PickObject::releaseBarrier(VkCommandBuffer _buffer) {
+  Object::releaseBarrier(_buffer);
+}
+
+VkDeviceSize PickObject::getBufferSize() {
+}
+
+void PickObject::setObjectInfo(pipeline_parameters *_parameters, VkGraphicsPipelineCreateInfo *pipelineInfo) {
+}
+
+void PickObject::update(float frame_time) {
+}
+
+void PickObject::prepare() {
+}
+
+void PickObject::createRenderPass(VkFormat format) {
+}
+
+void PickObject::createUniformBuffer() {
+}
+
+void PickObject::destroy() {
 }
