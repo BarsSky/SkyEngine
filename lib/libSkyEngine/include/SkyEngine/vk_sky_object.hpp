@@ -345,6 +345,12 @@ struct PM_IO_VULKAN_EXPORT Object {
    */
   VkSemaphore *getGraphicSemaphore();
 
+  /**
+ *@brief set visible property
+ *
+ */
+  void setVisibleProperty(bool flag);
+
   // VK layouts
   VkDescriptorSetLayout descriptorSetLayout{};
   // VkDescriptorSetLayout descriptorSetLayout_textures = VK_NULL_HANDLE;
@@ -436,6 +442,7 @@ private:
   float *omega_x{}, *omega_y{}, *omega_z{}, *omega_w{};
 
   struct ComputeInst;
+
 protected:
   std::vector<VkPipelineShaderStageCreateInfo> shadersStages;
   VulkanDevice *vDevice{};
@@ -447,23 +454,26 @@ protected:
   viBuffer trn_buff{};
   //COMPUTE BLOCK
   std::unique_ptr<ComputeInst> u_ptr_compute;
+  // DRAW BLOCK
+  bool is_object_visible = true;
 };
 
 
 struct Object::ComputeInst {
   VulkanDevice *vDevice;
-  uint32_t queueFamilyIndex;          // Used to check if compute and graphics queue families differ and require additional barriers
-  enma::Buffer storageBuffer;          // (Shader) storage buffer object containing the particles
-  enma::Buffer uniformBuffer;          // Uniform buffer object containing particle system parameters
-  VkQueue queue;                                // Separate queue for compute commands (queue family may differ from the one used for graphics)
-  VkCommandPool commandPool;          // Use a separate command pool (queue family may differ from the one used for graphics)
-  VkCommandBuffer commandBuffer = VK_NULL_HANDLE;                // Command buffer storing the dispatch commands and barriers
-  VkSemaphore compute;                      // Execution dependency between compute & graphic submission
-  VkSemaphore graphic;                      // Execution dependency between compute & graphic submission
-  VkDescriptorSetLayout descriptorSetLayout;  // Compute shader binding layout
-  VkDescriptorSet descriptorSet;        // Compute shader bindings
-  VkPipelineLayout pipelineLayout;      // Layout of the compute pipeline
-  VkPipeline pipeline;            // Compute pipeline for updating particle positions
+  uint32_t queueFamilyIndex;
+  // Used to check if compute and graphics queue families differ and require additional barriers
+  enma::Buffer storageBuffer; // (Shader) storage buffer object containing the particles
+  enma::Buffer uniformBuffer; // Uniform buffer object containing particle system parameters
+  VkQueue queue; // Separate queue for compute commands (queue family may differ from the one used for graphics)
+  VkCommandPool commandPool; // Use a separate command pool (queue family may differ from the one used for graphics)
+  VkCommandBuffer commandBuffer = VK_NULL_HANDLE; // Command buffer storing the dispatch commands and barriers
+  VkSemaphore compute; // Execution dependency between compute & graphic submission
+  VkSemaphore graphic; // Execution dependency between compute & graphic submission
+  VkDescriptorSetLayout descriptorSetLayout; // Compute shader binding layout
+  VkDescriptorSet descriptorSet; // Compute shader bindings
+  VkPipelineLayout pipelineLayout; // Layout of the compute pipeline
+  VkPipeline pipeline; // Compute pipeline for updating particle positions
 
   void set_device(VulkanDevice *vDev) {
     vDevice = vDev;

@@ -75,6 +75,7 @@ namespace vkglTF
 		float alphaCutoff = 1.0f;
 		float metallicFactor = 1.0f;
 		float roughnessFactor = 1.0f;
+		bool doubleSided = false;
 		glm::vec4 baseColorFactor = glm::vec4(1.0f);
 		vkglTF::Texture* baseColorTexture = nullptr;
 		vkglTF::Texture* metallicRoughnessTexture = nullptr;
@@ -86,7 +87,8 @@ namespace vkglTF
 		vkglTF::Texture* diffuseTexture;
 
 		VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
-
+		VkPipeline pipeline = VK_NULL_HANDLE;
+		~Material();
 		Material(VulkanDevice* device) : device(device) {};
 		void createDescriptorSet(VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout, uint32_t descriptorBindingFlags);
 	};
@@ -130,11 +132,33 @@ namespace vkglTF
 			void* mapped;
 		} uniformBuffer;
 
-		struct UniformBlock {
+		struct UniformBase {
 			glm::mat4 matrix;
+			glm::mat4 view;
+			glm::mat4 proj;
+			glm::vec4 viewPos;
+			glm::vec4 lightPositon;
+		}uniformBase;
+
+		struct UniformBlock:public UniformBase{
 			glm::mat4 jointMatrix[64]{};
 			float jointcount{ 0 };
 		} uniformBlock;
+
+		class uniformBuffer {
+
+		};
+
+		/**
+		 * @brief uniform object buffer
+		 */
+		struct UniformBufferObject : public uniformBuffer {
+			glm::mat4 model;
+			glm::mat4 view;
+			glm::mat4 proj;
+			glm::vec4 viewPos;
+			glm::vec4 lightPositon;
+		} gltf_ubo;
 
 		Mesh(VulkanDevice* device, glm::mat4 matrix);
 		~Mesh();
@@ -168,6 +192,7 @@ namespace vkglTF
 		glm::mat4 localMatrix();
 		glm::mat4 getMatrix();
 		void update();
+		bool visible =true;
 		~Node();
 	};
 
@@ -249,6 +274,7 @@ namespace vkglTF
 		vkglTF::Texture emptyTexture;
 		void createEmptyTexture(VkQueue transferQueue);
 	public:
+		void add_some_ubo();
 		VulkanDevice* device;
 		VkDescriptorPool descriptorPool;
 

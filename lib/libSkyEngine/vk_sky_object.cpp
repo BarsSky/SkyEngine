@@ -24,6 +24,8 @@ void Object::setObjectShaders() {
             flag = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
         if (array.at(array.size() - 2) == "comp")
             flag = VK_SHADER_STAGE_COMPUTE_BIT;
+        if (array.at(array.size() - 2) == "geom")
+            flag = VK_SHADER_STAGE_GEOMETRY_BIT;
 
         shadersStages.push_back(LoadShader(path, flag));
     }
@@ -185,6 +187,10 @@ VkQueue Object::getComputeQueue() {
 
 VkSemaphore *Object::getGraphicSemaphore() {
     return &u_ptr_compute->graphic;
+}
+
+void Object::setVisibleProperty(bool flag) {
+    is_object_visible = flag;
 }
 
 VkSemaphore *Object::getComputeSemaphore() {

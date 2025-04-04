@@ -17,6 +17,8 @@ Screen VKSky::CImpl::getScreen() {
   Screen _op;
   _op.width = vDevice.Width();
   _op.height = vDevice.Height();
+  _op.uWidth = vDevice.uWidth();
+  _op.uHeight = vDevice.uHeight();
 #ifdef GLFW_LIB_ENABLE
   _op.window = vDevice.get_glfw_window_ptr();
 #endif
@@ -239,6 +241,10 @@ void VKSky::CImpl::cleanup() {
     obj->cleanObjectSwapChain();
 
   vkDestroyPipelineCache(vDevice.logicalDevice, pipelineCache, nullptr);
+
+  for (auto &obj: all_objects)
+    vkDestroyPipelineCache(vDevice.logicalDevice, obj->pipelineCache, nullptr);
+
   for (size_t i = 0; i < all_objects.size(); i++) {
     vkDestroyPipeline(vDevice.logicalDevice, all_objects.at(i)->pipeline, nullptr);
     vkDestroyPipelineLayout(vDevice.logicalDevice, all_objects.at(i)->pipelineLayout, nullptr);

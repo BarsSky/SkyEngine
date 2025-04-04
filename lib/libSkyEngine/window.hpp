@@ -40,58 +40,61 @@ intern_atom_helper(xcb_connection_t *conn, bool only_if_exists, const char *str)
 
 class MWindow {
 public:
-    bool m_quit = false;
-    struct Settings {
-        bool fullScreen = false;
-    } m_settings;
-    uint32_t m_destWidth = 1280;
-    uint32_t m_destHeight = 720;
+  bool m_quit = false;
 
-    //
-    MWindow() = default;
+  struct Settings {
+    bool fullScreen = false;
+  } m_settings;
 
-    ~MWindow() {
-        if (!destroyed)
-            destroy();
-    }
+  uint32_t m_destWidth = 1280;
+  uint32_t m_destHeight = 720;
 
-    void destroy() {
+  //
+  MWindow() = default;
+
+  ~MWindow() {
+    if (!destroyed)
+      destroy();
+  }
+
+  void destroy() {
 #ifdef QT_LIB_ENABLE
         if (window)
             delete window;
 #else
-        glfwDestroyWindow(window);
-        glfwTerminate();
-        window = nullptr;
-        _primary = nullptr;
-        destroyed = true;
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    window = nullptr;
+    _primary = nullptr;
+    destroyed = true;
 #endif
-    }
+  }
 
-    void setViewParam(int _width, int _height) {
-        width = _width;
-        height = _height;
-    }
+  void setViewParam(int _width, int _height) {
+    width = _width;
+    height = _height;
+  }
 
 
-    void setIcon(std::string path) {
-        icon_path = std::move(path);
-    }
+  void setIcon(std::string path) {
+    icon_path = std::move(path);
+  }
 
 #ifndef QT_LIB_ENABLE
 
-    void setResizeCallFunc(void (*aFunc)(GLFWwindow *, int, int)) {
-        _func = aFunc;
-    }
-    void setCloseCallFunc(void (*aFunc)(GLFWwindow *)) {
-        afunc = aFunc;
-    }
+  void setResizeCallFunc(void (*aFunc)(GLFWwindow *, int, int)) {
+    _func = aFunc;
+  }
+
+  void setCloseCallFunc(void (*aFunc)(GLFWwindow *)) {
+    afunc = aFunc;
+  }
 
 #endif
 
-    static void glfw_error_callback(int error, const char *description) {
-        std::cout << "Error: " << description << " Error code: " << error << std::endl;
-    }
+  static void glfw_error_callback(int error, const char *description) {
+    std::cout << "Error: " << description << " Error code: " << error << std::endl;
+  }
 
 #ifdef QT_LIB_ENABLE
 
@@ -205,51 +208,51 @@ public:
 #endif
 #endif
 #else
-        void initWindow(const std::string &app_name, void *aThis) {
-                glfwSetErrorCallback(glfw_error_callback);
-                if (!glfwInit()) {
-                    throw std::runtime_error("init function error");
-                }
-                glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-                // take primary monitor
-                _primary = glfwGetPrimaryMonitor();
-                const GLFWvidmode *_mode = glfwGetVideoMode(_primary);
-
-                glfwWindowHint(GLFW_RED_BITS, _mode->redBits);
-                glfwWindowHint(GLFW_GREEN_BITS, _mode->greenBits);
-                glfwWindowHint(GLFW_BLUE_BITS, _mode->blueBits);
-                glfwWindowHint(GLFW_REFRESH_RATE, _mode->refreshRate);
-                glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-
-                window = glfwCreateWindow(width, height, app_name.data(), nullptr,
-                                          nullptr); //(_mode->width, _mode->height, "Vulkan", _primary, nullptr)
-                glfwSetWindowUserPointer(window, aThis);
-                if (_func != nullptr)
-                    glfwSetFramebufferSizeCallback(window, _func);
-                else
-                    throw std::runtime_error("callback function for resize not set");
-                if (afunc != nullptr)
-                    glfwSetWindowCloseCallback(window, afunc);
-                else
-                    throw std::runtime_error("callback function for close not set");
-                // glfwMakeContextCurrent(window);
-#endif
-        /*!
-         * Set Icon to window
-         */
-        if (!icon_path.empty())
-            setWindowIcon(icon_path.c_str());
+  void initWindow(const std::string &app_name, void *aThis) {
+    glfwSetErrorCallback(glfw_error_callback);
+    if (!glfwInit()) {
+      throw std::runtime_error("init function error");
     }
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-    bool shouldClosed() {
+    // take primary monitor
+    _primary = glfwGetPrimaryMonitor();
+    const GLFWvidmode *_mode = glfwGetVideoMode(_primary);
+
+    glfwWindowHint(GLFW_RED_BITS, _mode->redBits);
+    glfwWindowHint(GLFW_GREEN_BITS, _mode->greenBits);
+    glfwWindowHint(GLFW_BLUE_BITS, _mode->blueBits);
+    glfwWindowHint(GLFW_REFRESH_RATE, _mode->refreshRate);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+
+    window = glfwCreateWindow(width, height, app_name.data(), nullptr,
+                              nullptr); //(_mode->width, _mode->height, "Vulkan", _primary, nullptr)
+    glfwSetWindowUserPointer(window, aThis);
+    if (_func != nullptr)
+      glfwSetFramebufferSizeCallback(window, _func);
+    else
+      throw std::runtime_error("callback function for resize not set");
+    if (afunc != nullptr)
+      glfwSetWindowCloseCallback(window, afunc);
+    else
+      throw std::runtime_error("callback function for close not set");
+    // glfwMakeContextCurrent(window);
+#endif
+    /*!
+     * Set Icon to window
+     */
+    if (!icon_path.empty())
+      setWindowIcon(icon_path.c_str());
+  }
+
+  bool shouldClosed() {
 #ifdef QT_LIB_ENABLE
         //TODO: Make function on qt base
         return false;
 #else
-        return glfwWindowShouldClose(window);
+    return glfwWindowShouldClose(window);
 #endif
-    }
+  }
 
 #ifdef QT_LIB_ENABLE
 
@@ -258,70 +261,77 @@ public:
     }
 
 #else
-    GLFWwindow *getWindow() {
-        return window;
-    }
+  GLFWwindow *getWindow() {
+    return window;
+  }
 #endif
 
-    int getWidth() const {
+  int getWidth() const {
 #ifdef QT_LIB_ENABLE
         return vulkan_widget->width();
 #else
-        return width;
+    return width;
 #endif
-    }
+  }
 
-    int getHeight() const {
+  int getHeight() const {
 #ifdef QT_LIB_ENABLE
         return vulkan_widget->height();
 #else
-        return height;
+    return height;
 #endif
-    }
+  }
 
-    int *Width() {
-        return &width;
-    }
+  int *Width() {
+    return &width;
+  }
 
-    int *Height() {
-        return &height;
-    }
+  int *Height() {
+    return &height;
+  }
 
-    void fullScreenSwitch() {
-        // GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+  uint32_t *uWidth() {
+    return (reinterpret_cast<uint32_t *>(&width));
+  }
+
+  uint32_t *uHeight() {
+    return (reinterpret_cast<uint32_t *>(&height));
+  }
+
+
+  void fullScreenSwitch() {
+    // GLFWmonitor *monitor = glfwGetPrimaryMonitor();
 #ifdef QT_LIB_ENABLE
 #else
-        const GLFWvidmode *mode = glfwGetVideoMode(_primary);
-        if (!_fullscreen) {
-            // backup
-            glfwGetWindowPos(window, &windPos[0], &windPos[1]);
-            glfwGetWindowSize(window, &windSize[0], &windSize[1]);
-            //
-            glfwSetWindowMonitor(window, _primary, 0, 0, mode->width, mode->height, mode->refreshRate);
-            _fullscreen = true;
-        } else {
-            glfwSetWindowMonitor(window, nullptr, windPos[1], windPos[1], windSize[0], windSize[1], mode->refreshRate);
-            _fullscreen = false;
-        }
-#endif
+    const GLFWvidmode *mode = glfwGetVideoMode(_primary);
+    if (!_fullscreen) {
+      // backup
+      glfwGetWindowPos(window, &windPos[0], &windPos[1]);
+      glfwGetWindowSize(window, &windSize[0], &windSize[1]);
+      //
+      glfwSetWindowMonitor(window, _primary, 0, 0, mode->width, mode->height, mode->refreshRate);
+      _fullscreen = true;
+    } else {
+      glfwSetWindowMonitor(window, nullptr, windPos[1], windPos[1], windSize[0], windSize[1], mode->refreshRate);
+      _fullscreen = false;
     }
+#endif
+  }
 
 private:
-
-
-    void setWindowIcon(const char *path) {
+  void setWindowIcon(const char *path) {
 #ifdef QT_LIB_ENABLE
 #else
-        GLFWimage images[1];
-        images[0].pixels = stbi_load(path, &images[0].width, &images[0].height, 0, 4);
-        glfwSetWindowIcon(window, 1, images);
-        stbi_image_free(images[0].pixels);
+    GLFWimage images[1];
+    images[0].pixels = stbi_load(path, &images[0].width, &images[0].height, 0, 4);
+    glfwSetWindowIcon(window, 1, images);
+    stbi_image_free(images[0].pixels);
 #endif
-    }
+  }
 
-    std::string icon_path;//../icons/engine.png
-    // fullscreen flag
-    bool _fullscreen = false;
+  std::string icon_path; //../icons/engine.png
+  // fullscreen flag
+  bool _fullscreen = false;
 #ifdef QT_LIB_ENABLE
     QWindow *window = nullptr;
     VkWidget *vulkan_widget{};
@@ -340,18 +350,21 @@ public:
 #endif
 #endif
 #else
-    GLFWwindow *window{};
-    GLFWmonitor *_primary{};
-    //callback functions
-    void (*_func)(GLFWwindow *, int, int){};
-    void (*afunc)(GLFWwindow *){};
-#endif
-private:
-    bool destroyed = false;
-    //
-    int windPos[2]{};
-    int windSize[2]{};
-    int width = MAGICK_WIDTH;
+  GLFWwindow *window{};
+  GLFWmonitor *_primary{};
 
-    int height = MAGICK_HEIGHT;
+  //callback functions
+  void (*_func)(GLFWwindow *, int, int){};
+
+  void (*afunc)(GLFWwindow *){};
+#endif
+
+private:
+  bool destroyed = false;
+  //
+  int windPos[2]{};
+  int windSize[2]{};
+  int width = MAGICK_WIDTH;
+
+  int height = MAGICK_HEIGHT;
 };

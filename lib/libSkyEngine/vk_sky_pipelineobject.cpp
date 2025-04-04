@@ -77,6 +77,9 @@ pipelineObject::pipelineObject(ePipelineObjectType type, const std::vector<Verte
         case ePipelineObjectType::LINE:
             object = create_Line(vertices);
             break;
+        case ePipelineObjectType::TEXT_OVERLAY:
+            object = create_TextOverlay();
+            break;
         default:
             break;
     }
@@ -112,6 +115,10 @@ void *pipelineObject::create_Model_2D(std::vector<Vertex> vertices, std::vector<
 
 void *pipelineObject::create_Line() {
     return object = reinterpret_cast<void *>(new Line());
+}
+
+void *pipelineObject::create_TextOverlay() {
+    return object = reinterpret_cast<void *>(new TextOverlay());
 }
 
 void *pipelineObject::create_Line(std::vector<Vertex> vertices) {

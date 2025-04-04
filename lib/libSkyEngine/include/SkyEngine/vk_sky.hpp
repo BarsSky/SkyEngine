@@ -62,77 +62,74 @@
 #include <SkyEngine/vk_sky_uioverlay.hpp>
 #include <SkyEngine/vk_sky_keyboard.hpp>
 
-namespace vk_sky
-{
+namespace vk_sky {
+  struct toolConfig {
+    std::string name;
+    uint32_t major_version;
+    uint32_t minor_version;
+    uint32_t patch_version;
+  };
 
-    struct toolConfig
-    {
-        std::string name;
-        uint32_t major_version;
-        uint32_t minor_version;
-        uint32_t patch_version;
-    };
+  struct Screen {
+    bool have_spot() const {
+      if (*height == 0 || *width == 0)
+        return false;
+      return true;
+    }
 
-    struct Screen
-    {
-        bool have_spot() const
-        {
-            if (*height == 0 || *width == 0)
-                return false;
-            return true;
-        }
-        int *width{};
-        int *height{};
+    int *width{};
+    int *height{};
+    uint32_t *uWidth{};
+    uint32_t *uHeight{};
 #ifdef GLFW_LIB_ENABLE
-        GLFWwindow* window = nullptr;
+    GLFWwindow *window = nullptr;
 #endif
-    };
+  };
 
-    enum ObjectFlags
-    {
-        BASE_LOAD = 0,
-        LOAD_IN_THREAD = 1
-    };
+  enum ObjectFlags {
+    BASE_LOAD = 0,
+    LOAD_IN_THREAD = 1
+  };
 
-    class VKSky
+  class VKSky
 #ifdef QT_LIB_ENABLE
         : public QObject
     {
         Q_OBJECT
 #else
-    {
+  {
 #endif
 
-    public:
-        VKSky();
+  public:
+    VKSky();
 
 #ifdef QT_LIB_ENABLE
         ~VKDisplay() override;
 #else
-        virtual ~VKSky();
+    virtual ~VKSky();
 #endif
 
-        //
-        static VKSky *getApp(VKSky *ptr = nullptr);
+    //
+    static VKSky *getApp(VKSky *ptr = nullptr);
 
-        // fps lock
-        struct
-        {
-            bool lockOn = true;
-            float maxFPS = 60;
-        } appFramerate;
-        /**
-         *
-         * @param flag of recreate window for show new image
-         */
-        void set_recreate_event(bool flag);
+    // fps lock
+    struct {
+      bool lockOn = true;
+      float maxFPS = 60;
+    } appFramerate;
 
-        // function for start
-        void run();
+    /**
+     *
+     * @param flag of recreate window for show new image
+     */
+    void set_recreate_event(bool flag);
 
-        bool done = false;
+    // function for start
+    void run();
 
-        bool stop_engine();
+    bool done = false;
+
+    bool stop_engine();
 #ifdef QT_LIB_ENABLE
         // functions for static call from qt widget
 
@@ -146,36 +143,37 @@ namespace vk_sky
 
         void send_scroll_event(void *event, double y_offset);
 #endif
-        Object *createObject(const pipelineObject &pipeline, ObjectFlags flag = ObjectFlags::BASE_LOAD);
+    Object *createObject(const pipelineObject &pipeline, ObjectFlags flag = ObjectFlags::BASE_LOAD);
 
-        Screen getScreen();
+    Screen getScreen();
 
-        float get_timer();
+    float get_timer();
 
-        void recreateWindow();
+    void recreateWindow();
 
-        void removeObject(Object *_obj);
+    void removeObject(Object *_obj);
 
-        float fpsCounter;
-        uint64_t frameCount = 0;
-        std::chrono::time_point<std::chrono::high_resolution_clock> lastTimestamp = std::chrono::high_resolution_clock::now();
+    float fpsCounter;
+    uint64_t frameCount = 0;
+    std::chrono::time_point<std::chrono::high_resolution_clock> lastTimestamp =
+        std::chrono::high_resolution_clock::now();
 
-        // Implementation of library
-        class CImpl;
+    // Implementation of library
+    class CImpl;
 
-        /**
-         * @brief Function for override assets prepare (models/textures/shaders)
-         *
-         */
-        virtual void PrepareAssets();
+    /**
+     * @brief Function for override assets prepare (models/textures/shaders)
+     *
+     */
+    virtual void PrepareAssets();
 
-        // function for update objects buffers value
-        virtual void updateUniformBuffer();
+    // function for update objects buffers value
+    virtual void updateUniformBuffer();
 
-        /** @brief (Pure virtual) Render function to be implemented by the sample application */
-        virtual void render() = 0;
+    /** @brief (Pure virtual) Render function to be implemented by the sample application */
+    virtual void render() = 0;
 
-        // FUNCTIONS for keyboard override
+    // FUNCTIONS for keyboard override
 #ifdef QT_LIB_ENABLE
         /**
          * @brief
@@ -213,137 +211,137 @@ namespace vk_sky
         virtual void magickCursor(QMouseEvent *event);
 #endif
 #ifdef GLFW_LIB_ENABLE
-        /**
-         * @brief
-         *
-         */
-        void checkKeys();
-        //
-        /**
-         * @brief
-         *
-         * @param key
-         * @param scancode
-         * @param action
-         * @param mods
-         */
-        virtual void magickKeyboard(int key, int scancode, int action, int mods);
+    /**
+     * @brief
+     *
+     */
+    void checkKeys();
 
-        /**
-         * @brief
-         *
-         * @param x_offset
-         * @param y_offset
-         */
-        virtual void magickScroll(double x_offset, double y_offset);
+    //
+    /**
+     * @brief
+     *
+     * @param key
+     * @param scancode
+     * @param action
+     * @param mods
+     */
+    virtual void magickKeyboard(int key, int scancode, int action, int mods);
 
-        /**
-         * @brief
-         *
-         * @param button
-         * @param action
-         * @param mods
-         */
-        virtual void magickMouse(int button, int action, int mods);
+    /**
+     * @brief
+     *
+     * @param x_offset
+     * @param y_offset
+     */
+    virtual void magickScroll(double x_offset, double y_offset);
 
-        /**
-         * @brief
-         *
-         * @param x_pos
-         * @param y_pos
-         */
-        virtual void magickCursor(double x_pos, double y_pos);
+    /**
+     * @brief
+     *
+     * @param button
+     * @param action
+     * @param mods
+     */
+    virtual void magickMouse(int button, int action, int mods);
 
-        /**
-         * @brief
-         *
-         * @param overlay
-         */
-        virtual void OnUpdateUIOverlay(gui::UIOverlay *overlay);
+    /**
+     * @brief
+     *
+     * @param x_pos
+     * @param y_pos
+     */
+    virtual void magickCursor(double x_pos, double y_pos);
 
-        /**
-         * @brief
-         *
-         * @param x_pos
-         * @param y_pos
-         * @param handled
-         */
-        virtual void mouseMoved(float x_pos, float y_pos, bool handled);
+    /**
+     * @brief
+     *
+     * @param overlay
+     */
+    virtual void OnUpdateUIOverlay(gui::UIOverlay *overlay);
+
+    /**
+     * @brief
+     *
+     * @param x_pos
+     * @param y_pos
+     * @param handled
+     */
+    virtual void mouseMoved(float x_pos, float y_pos, bool handled);
 #endif
-        /**
-         * @brief Initialize version of app and engine (number of version/name)
-         *
-         */
-        virtual void version_init();
+    /**
+     * @brief Initialize version of app and engine (number of version/name)
+     *
+     */
+    virtual void version_init();
 
-        /**
-         * @brief Set the first camera object
-         *
-         */
-        virtual void set_first_camera();
+    /**
+     * @brief Set the first camera object
+     *
+     */
+    virtual void set_first_camera();
 
-    private:
-        void updateBuffers();
+  private:
+    void updateBuffers();
 #ifdef QT_LIB_ENALE
         VkWidget *vulkan_widget = nullptr;
 #endif
 #ifdef GLFW_LIB_ENABLE
-        VulkanKeyboard magick_keyboard;
+    VulkanKeyboard magick_keyboard;
 #endif
-        // Static callback on Close Window
+    // Static callback on Close Window
 
-        static void quit_from_engine(vk_sky::VKSky *obj);
+    static void quit_from_engine(vk_sky::VKSky *obj);
 
-        struct
-        {
-            bool left = false;
-            bool right = false;
-            bool middle = false;
-        } mouseButtons;
+    struct {
+      bool left = false;
+      bool right = false;
+      bool middle = false;
+    } mouseButtons;
 
-        struct Scroll
-        {
-            bool up = false;
-            bool down = false;
-        } m_scroll;
+    struct Scroll {
+      bool up = false;
+      bool down = false;
+    } m_scroll;
 
-        float m_distance = 0.f;
-        glm::vec2 mousePosition{};
+    float m_distance = 0.f;
+    glm::vec2 mousePosition{};
 
-        std::unique_ptr<CImpl> u_ptr_;
+    std::unique_ptr<CImpl> u_ptr_;
 
-        bool is_recreate = false;
+    bool is_recreate = false;
 
-    protected:
-        std::thread magick_thread;
-        toolConfig appConfig, engConfig;
-        Screen current_window;
-        ObjCamera camera;
+  protected:
+    std::thread magick_thread;
+    toolConfig appConfig, engConfig;
+    Screen current_window;
+    ObjCamera camera;
 
-        /**
-         * @brief
-         *
-         */
-        void mainLoop();
-        // base frame function draw
-        void drawFrame();
+    /**
+     * @brief
+     *
+     */
+    void mainLoop();
 
-        void prepareObjectType();
+    // base frame function draw
+    void drawFrame();
 
-      void visible_ui(bool flag) const;
+    void prepareObjectType();
 
-        /**
-         * @brief
-         *
-         * @param messageSeverity
-         * @param messageType
-         * @param pCallbackData
-         * @param pUserData
-         * @return VKAPI_ATTR
-         */
-        static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                                            VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                                            const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-                                                            void *pUserData);
-    };
+    void visible_ui(bool flag) const;
+
+    /**
+     * @brief
+     *
+     * @param messageSeverity
+     * @param messageType
+     * @param pCallbackData
+     * @param pUserData
+     * @return VKAPI_ATTR
+     */
+    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                                                        VkDebugUtilsMessageTypeFlagsEXT messageType,
+                                                        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+                                                        void *pUserData);
+  };
 };

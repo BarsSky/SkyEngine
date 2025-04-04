@@ -107,8 +107,17 @@ struct UniformBufferObject : public uniformBuffer {
   glm::mat4 model;
   glm::mat4 view;
   glm::mat4 proj;
-  glm::mat4 normal;
+  glm::vec4 viewPos;
   glm::vec4 lightPositon;
+};
+
+/**
+ *
+ */
+struct UniformBufferLine : public uniformBuffer {
+  glm::mat4 view;
+  glm::mat4 proj;
+  glm::vec4 viewPos;
 };
 /**
  * @brief
@@ -748,7 +757,6 @@ struct PM_IO_VULKAN_EXPORT Terrian_Model : public Model {
 };
 
 struct PM_IO_VULKAN_EXPORT GLTF_Model : public Object {
-
   UniformBufferObject gltf_ubo{};
 
   std::string obj_path;
@@ -761,9 +769,15 @@ struct PM_IO_VULKAN_EXPORT GLTF_Model : public Object {
 
   void updateMapped() override;
 
+  void updateUBO(UniformBufferObject *data, size_t mesh_id);
+
   Vertex vertex{};
 
   void destroy() override;
+
+  uint32_t getNodesSize() const;
+
+  uint32_t getLinearNodesSize() const;
 
   uint32_t getMaterialsSize() const;
 
@@ -787,11 +801,15 @@ struct PM_IO_VULKAN_EXPORT GLTF_Model : public Object {
 
   void setDescriptorLayout() override;
 
-  void createFramebuffers(VulkanSwapChain *vkSwapChain) override {}
+  void createFramebuffers(VulkanSwapChain *vkSwapChain) override {
+  }
 
-  void createRenderPass(VkFormat format) override {}
+  void createRenderPass(VkFormat format) override {
+  }
 
   void createUniformBuffer() override;
+
+  void set_visible_node(size_t index, bool flag);
 
   VkDeviceSize getBufferSize() override;
 
@@ -909,6 +927,14 @@ struct PM_IO_VULKAN_EXPORT GLTF_SkyBox : public GLTF_Model {
 
   void createRenderPass(VkFormat format) override;
 
+  void createDescriptorSets() override;
+
+  void createDescriptorPool() override;
+
+  void preparePipeline() override;
+
+  void createUniformBuffer() override;
+
   void bloomRender();
 
   void prepareOffscreenFramebuffer(FrameBuffer *frameBuf, VkFormat colorFormat, VkFormat depthFormat);
@@ -918,36 +944,22 @@ struct PM_IO_VULKAN_EXPORT GLTF_SkyBox : public GLTF_Model {
 
 // Max. number of chars the text overlay buffer can hold
 #define TEXTOVERLAY_MAX_CHAR_COUNT 2048
-
-struct PM_IO_VULKAN_EXPORT TextOverlay //: public Object
-{
+//TODO: Make universal TEXT OBJECT as PARENT for ANOTHER like OVERLAY OR TEXT ON BOARD
+struct PM_IO_VULKAN_EXPORT TextOverlay : public Object {
 private:
-  VulkanDevice *vulkanDevice;
-
-  VkQueue queue;
-  VkFormat colorFormat;
-  VkFormat depthFormat;
-
   uint32_t *frameBufferWidth;
   uint32_t *frameBufferHeight;
-  float scale;
+  float scale = 1.0;
 
+  VkBuffer buffer{};
   VkSampler sampler{};
   VkImage image{};
   VkImageView view{};
-  VkBuffer buffer{};
-  VkDeviceMemory memory{};
   VkDeviceMemory imageMemory{};
+  VkDeviceMemory memory{};
   VkDescriptorPool descriptorPool{};
   VkDescriptorSetLayout descriptorSetLayout{};
-  VkDescriptorSet descriptorSet{};
-  VkPipelineLayout pipelineLayout{};
-  VkPipelineCache text_pipelineCache{};
-  VkPipeline pipeline{};
-  VkRenderPass renderPass{};
   VkCommandPool commandPool{};
-  std::vector<VkFramebuffer *> frameBuffers;
-  std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
   // Pointer to mapped vertex buffer
   glm::vec4 *mapped = nullptr;
@@ -964,30 +976,25 @@ public:
 
   std::vector<VkCommandBuffer> cmdBuffers;
 
-  TextOverlay(
-      VulkanDevice *vulkanDevice,
-      VulkanSwapChain *vkSwapChain,
-      VkQueue queue,
-      VkFormat colorformat,
-      VkFormat depthformat,
-      uint32_t *framebufferwidth,
-      uint32_t *framebufferheight,
-      float scale,
-      std::vector<VkPipelineShaderStageCreateInfo> shaderstages);
+  TextOverlay();
 
-  ~TextOverlay();
+  ~TextOverlay() override;
 
   // Prepare all vulkan resources required to render the font
   // The text overlay uses separate resources for descriptors (pool, sets, layouts), pipelines and command buffers
   void prepareResources();
 
   // Prepare a separate pipeline for the font rendering decoupled from the main application
-  void preparePipeline();
+  void preparePipeline() override;
 
   // Prepare a separate render pass for rendering the text as an overlay
   void prepareRenderPass();
 
   void createFramebuffers(VulkanSwapChain *vkSwapChain);
+
+  void updateScale(float nScale);
+
+  void updateFrameSize(uint32_t *width, uint32_t *height);
 
   // Map buffer
   void beginTextUpdate();
@@ -999,8 +1006,43 @@ public:
   // Unmap buffer and update command buffers
   void endTextUpdate();
 
-  // Needs to be called by the application
-  void updateCommandBuffers();
+  void draw(VkCommandBuffer _buffer) override;
+
+  void initialization() override;
+
+  VkDeviceSize getBufferSize() override;
+
+  uint32_t getTexturesSize() override;
+
+  VkDescriptorImageInfo *get_descriptor_image(size_t tex_idx) override;
+
+  viBuffer *getBuffer() override;
+
+  std::vector<uint32_t> *getIndices() override;
+
+  void loadTexture(VkImageViewType type) override;
+
+  void destroy() override;
+
+  void setObjectInfo(pipeline_parameters *_parameters, VkGraphicsPipelineCreateInfo *pipelineInfo) override;
+
+  void update(float frame_time) override;
+
+  void prepare() override;
+
+  void setDescriptorLayout() override;
+
+  void createRenderPass(VkFormat format) override;
+
+  void createDescriptorSets() override;
+
+  void createDescriptorPool() override;
+
+  void createUniformBuffer() override;
+
+  void updateMapped() override;
+
+  void createAdditinalBuffer() override;
 };
 
 // // Vertex layout for this example
@@ -1164,14 +1206,20 @@ struct PM_IO_VULKAN_EXPORT Model2D : public Object {
 
 struct PM_IO_VULKAN_EXPORT Line : public Object {
 
-  UniformBufferObject line_ubo{};
+  UniformBufferLine line_ubo{};
+
+  struct PushConstantTo {
+    float line_thick = 1.0;
+    int segments = 16;
+    bool dash = false;
+  } push_constants;
 
   Vertex vertex{};
   enma::Buffer vertexBuffer;
   enma::Buffer indexBuffer;
   uint32_t indexCount{};
   std::vector<uint32_t> indices;
-  float line_thick = 0.005f;
+  float line_thick = 1.f;
   glm::vec4 color = {0.0f, 0.0f, 0.0f, 1.0f};
 
   VkDeviceSize bufferSize = sizeof(UniformBufferObject);
@@ -1189,6 +1237,9 @@ struct PM_IO_VULKAN_EXPORT Line : public Object {
 
   void destroy() override;
 
+  void updateLinePoints(const std::vector<Vertex> &new_points);
+
+  // TODO: add texture load on line
   void loadTexture(VkImageViewType type = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D) override;
 
   void preparePipeline() override;
@@ -1199,7 +1250,8 @@ struct PM_IO_VULKAN_EXPORT Line : public Object {
 
   std::vector<uint32_t> *getIndices() override;
 
-  void prepare() override {};
+  void prepare() override {
+  };
 
   void setDescriptorLayout() override;
 
@@ -1214,7 +1266,8 @@ struct PM_IO_VULKAN_EXPORT Line : public Object {
 
   viBuffer *getBuffer() override;
 
-  void update(float frame_time) override {}
+  void update(float frame_time) override {
+  }
 
   VkDescriptorImageInfo *get_descriptor_image(size_t tex_idx) override;
 

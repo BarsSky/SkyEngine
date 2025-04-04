@@ -2,6 +2,8 @@
 // Created by ubuntu on 30.05.24.
 //
 #include "interface.h"
+
+#include <iomanip>
 #include <SkyEngine/config/config.h>
 
 static glm::mat4 rotateAroundPoint(float rad, const glm::vec3 &point, const glm::vec3 &axis) {
@@ -48,11 +50,18 @@ void Interface::render() {
 
 void Interface::PrepareAssets() {
   PrepareBaseObjects();
-      modelAnimate = reinterpret_cast<GLTF_Model_Animate*>(createObject(
-              pipelineObject(ePipelineObjectType::GLTF_ANIMATE,std::string(MODELS_DIRECTORY) + "/Wraith_Animated.glb")));
-      modelAnimate->obj_position = glm::vec3(0.0f, 0.0f, 0.0f);
-      modelAnimate->load_object_shaders({ std::string(SHADER_DIRECTORY) +"/skinnedmodel.frag.spv" ,
-        std::string(SHADER_DIRECTORY) +"/skinnedmodel.vert.spv"});
+  // modelAnimate = reinterpret_cast<GLTF_Model_Animate*>(createObject(
+  //         pipelineObject(ePipelineObjectType::GLTF_ANIMATE,std::string(MODELS_DIRECTORY) + "/Wraith_Animated.glb")));
+  // modelAnimate->obj_position = glm::vec3(0.0f, 0.0f, 0.0f);
+  // modelAnimate->load_object_shaders({ std::string(SHADER_DIRECTORY) +"/shader.frag.spv" ,
+  //   std::string(SHADER_DIRECTORY) +"/shader.vert.spv"});
+
+  SpaceShip = reinterpret_cast<GLTF_Model *>(createObject(
+    pipelineObject(ePipelineObjectType::GLTF, std::string(MODELS_DIRECTORY) + "/ColonShip1.glb")));
+  SpaceShip->obj_position = glm::vec3(0.0f, 0.0f, 0.0f);
+  SpaceShip->load_object_shaders({
+    std::string(SHADER_DIRECTORY) + "/shader.vert.spv", std::string(SHADER_DIRECTORY) + "/shader.frag.spv"
+  });
 
   gpu_particle = reinterpret_cast<Partical_Model_GPU *>(createObject(
     pipelineObject(ePipelineObjectType::PARTICLE_GPU_OBJECT, "")
@@ -81,6 +90,10 @@ void Interface::PrepareAssets() {
     std::string(SHADER_DIRECTORY) + "/compute_particle.vert.spv",
     std::string(SHADER_DIRECTORY) + "/compute_particle.frag.spv"
   });
+
+  text_info = reinterpret_cast<TextOverlay *>(createObject(pipelineObject(ePipelineObjectType::TEXT_OVERLAY)));
+  text_info->load_object_shaders({SHADER_DIRECTORY"/text.vert.spv",SHADER_DIRECTORY"/text.frag.spv"});
+  text_info->updateFrameSize(getScreen().uWidth, getScreen().uHeight);
 }
 
 void Interface::PrepareBaseObjects() {
@@ -210,19 +223,57 @@ void Interface::updateUniformBuffer() {
   Earth->object_ubo.view = camera.matrices.view;
   Earth->object_ubo.proj = camera.matrices.perspective;
 
-  modelAnimate->gltf_animate_ubo.projection = camera.matrices.perspective;
-  modelAnimate->gltf_animate_ubo.view = camera.matrices.view;
-  modelAnimate->update(get_timer()*10);
+
+  // modelAnimate->gltf_animate_ubo.projection = camera.matrices.perspective;
+  // modelAnimate->gltf_animate_ubo.view = camera.matrices.view;
+  // modelAnimate->update(get_timer()*10);
 
   glm::vec3 new_center = {10, 0, 0};
-  //    Axis_X->gltf_ubo.model = glm::mat4(1.f);
-  //
-  //    Axis_X->gltf_ubo.model = glm::translate(Axis_X->gltf_ubo.model, new_center);
-  //    Axis_X->gltf_ubo.model = glm::rotate(Axis_X->gltf_ubo.model, glm::radians(angle_x), xNorm);
-  //    Axis_X->gltf_ubo.model = glm::scale(Axis_X->gltf_ubo.model, glm::vec3(0.1, 0.1, 0.1));
-  //    Axis_X->gltf_ubo.lightPositon = sun_position;
-  //    Axis_X->gltf_ubo.view = camera.matrices.view;
-  //    Axis_X->gltf_ubo.proj = camera.matrices.perspective;
+
+
+  // SpaceShip->gltf_ubo.model = glm::translate(SpaceShip->gltf_ubo.model, new_center);
+  // SpaceShip->gltf_ubo.model = glm::rotate(SpaceShip->gltf_ubo.model, glm::radians(angle_x), xNorm);
+  // SpaceShip->gltf_ubo.model = glm::scale(SpaceShip->gltf_ubo.model, glm::vec3(0.1, 0.1, 0.1));
+  auto size_nodes = SpaceShip->getLinearNodesSize();
+  for (int i = 0; i < size_nodes; ++i) {
+    SpaceShip->gltf_ubo.model = glm::mat4(1.f);
+    SpaceShip->gltf_ubo.lightPositon = sun_position;
+    SpaceShip->gltf_ubo.view = camera.matrices.view;
+    SpaceShip->gltf_ubo.proj = camera.matrices.perspective;
+    SpaceShip->gltf_ubo.viewPos = camera.viewPos;
+    SpaceShip->updateUBO(&SpaceShip->gltf_ubo, i);
+  }
+
+  //////// TextOverlay
+  text_info->updateScale(1.0);
+  text_info->updateFrameSize(getScreen().uWidth, getScreen().uHeight);
+  text_info->beginTextUpdate();
+
+  text_info->addText("title", 5.0f * 1, 5.0f * 1, TextOverlay::alignLeft);
+
+  std::stringstream ss;
+  ss << std::fixed << std::setprecision(2) << (time * 1000.0f) << "ms (" << fpsCounter << " fps)";
+  text_info->addText(ss.str(), 5.0f * 1, 25.0f * 1, TextOverlay::alignLeft);
+
+  text_info->addText("VideoCard", 5.0f * 1, 45.0f * 1, TextOverlay::alignLeft);
+
+  // Display current model view matrix
+  text_info->addText("model view matrix", (float) (*getScreen().width) - 5.0f * 1, 5.0f * 1, TextOverlay::alignRight);
+
+  for (uint32_t i = 0; i < 4; i++) {
+    ss.str("");
+    ss << std::fixed << std::setprecision(2) << std::showpos;
+    text_info->addText(ss.str(), (float) (*getScreen().width) - 5.0f * 1, (25.0f + (float) i * 20.0f) * 1,
+                       TextOverlay::alignRight);
+  }
+
+  glm::vec3 projected = glm::project(glm::vec3(0.0f),
+                                     SpaceShip->gltf_ubo.view,
+                                     SpaceShip->gltf_ubo.proj,
+                                     glm::vec4(0, 0, (float) (*getScreen().width), (float) (*getScreen().height)));
+  text_info->addText("A cube", projected.x, projected.y, TextOverlay::alignCenter);
+
+  text_info->endTextUpdate();
   //    //    memcpy(Axis_X->uniformObjectBuffer.mapped, &Axis_X->gltf_ubo, sizeof(Axis_X->gltf_ubo));
   //    Axis_Y->gltf_ubo.model = glm::mat4(1.f);
   //

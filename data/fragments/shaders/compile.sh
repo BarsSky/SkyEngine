@@ -50,6 +50,13 @@ $VK_VULKAN_BIN/glslc axis/axis.vert -o comp/axis.vert.spv
 $VK_VULKAN_BIN/glslc computeparticle/particle.frag -o comp/compute_particle.frag.spv
 $VK_VULKAN_BIN/glslc computeparticle/particle.vert -o comp/compute_particle.vert.spv
 $VK_VULKAN_BIN/glslc computeparticle/particle.comp -o comp/compute_particle.comp.spv
+# line
+$VK_VULKAN_BIN/glslc line/line.frag -o comp/line.frag.spv
+$VK_VULKAN_BIN/glslc line/line.vert -o comp/line.vert.spv
+$VK_VULKAN_BIN/glslc line/line.geom -o comp/line.geom.spv
+# text
+$VK_VULKAN_BIN/glslc text/text.vert -o comp/text.vert.spv
+$VK_VULKAN_BIN/glslc text/text.frag -o comp/text.frag.spv
 
 cp -r ./comp/. ../../shaders
 echo "Done"

@@ -899,15 +899,21 @@ void VulkanDevice::initWindow(std::string app_name
         u_ptr_window->crossWindow.m_quit = flag;
     }
 
-    int *VulkanDevice::Width()
-    {
+    int *VulkanDevice::Width() const {
         return u_ptr_window->crossWindow.Width();
     }
 
-    int *VulkanDevice::Height()
-    {
+    int *VulkanDevice::Height() const {
         return u_ptr_window->crossWindow.Height();
     }
+
+    uint32_t *VulkanDevice::uWidth() const {
+            return u_ptr_window->crossWindow.uWidth();
+        }
+
+    uint32_t *VulkanDevice::uHeight() const {
+            return u_ptr_window->crossWindow.uHeight();
+        }
 
 GLFWwindow *VulkanDevice::get_glfw_window_ptr() {
   return u_ptr_window->crossWindow.getWindow();
