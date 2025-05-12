@@ -14,6 +14,8 @@ void VulkanDevice::shouldCloseCallback(GLFWwindow *window) {
 void VulkanDevice::framebufferResizeCallback(GLFWwindow *window, int width, int height) {
     auto app = reinterpret_cast<VulkanDevice *>(glfwGetWindowUserPointer(window));
     app->framebufferResized = true;
+    *app->uWidth() = width;
+    *app->uHeight() = height;
 }
 #endif
 VkCommandBuffer VulkanDevice::beginSingleTimeCommands(VkCommandBufferLevel level, VkCommandPool pool, bool begin)
@@ -865,6 +867,11 @@ void VulkanDevice::createSurface()
 #endif
 #endif
 }
+#ifdef GLFW_LIB_ENABLE
+void VulkanDevice::switchFullScreen(){
+    u_ptr_window->crossWindow.fullScreenSwitch();
+}
+#endif
 
 void VulkanDevice::windowFrameBuffer()
 {

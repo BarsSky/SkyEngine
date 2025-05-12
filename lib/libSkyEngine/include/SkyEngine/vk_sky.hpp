@@ -82,6 +82,8 @@ namespace vk_sky {
     bool have_spot() const {
       if (*height == 0 || *width == 0)
         return false;
+        if (*uHeight == 0 || *uWidth == 0)
+        return false;
       return true;
     }
 
@@ -178,7 +180,7 @@ namespace vk_sky {
     // function for update objects buffers value
     virtual void updateUniformBuffer();
 
-    void updateCommandBuffer();
+    void recreateCommandBuffer();
 
     /** @brief (Pure virtual) Render function to be implemented by the sample application */
     virtual void render() = 0;

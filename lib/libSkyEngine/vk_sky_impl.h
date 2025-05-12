@@ -77,6 +77,9 @@ public:
 
     VkWidget *vulkan_widget = nullptr;
 #endif
+#ifdef GLFW_LIB_ENABLE
+  void switchFullScreen();
+#endif
   // Static callback on Close Window
 
   void set_new_window_size(int width, int height);

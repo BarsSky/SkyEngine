@@ -128,7 +128,7 @@ void VKSky::drawFrame() {
 void VKSky::updateUniformBuffer() {
 }
 
-void VKSky::updateCommandBuffer() {
+void VKSky::recreateCommandBuffer() {
     u_ptr_->viewUpdated = true;
 }
 
@@ -367,7 +367,7 @@ void VKSky::magickKeyboard(int key, int scancode, int action, int mods) {
     //      }
       switch (key) {
         case GLFW_KEY_F2:
-          // u_ptr_->crossWindow.fullScreenSwitch();
+          u_ptr_->switchFullScreen();
           break;
         case GLFW_KEY_F1:
           u_ptr_->uiOverlay.visible = !u_ptr_->uiOverlay.visible;

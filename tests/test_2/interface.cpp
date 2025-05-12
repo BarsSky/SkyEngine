@@ -336,7 +336,7 @@ void Interface::updateUniformBuffer() {
     //timer_dog-=10;
     iter_dog++;
   }
-  updateCommandBuffer();
+  recreateCommandBuffer();
 }
 
 void Interface::clear() {

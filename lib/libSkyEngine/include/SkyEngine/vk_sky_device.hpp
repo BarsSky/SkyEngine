@@ -88,6 +88,8 @@ public:
 
 #ifdef GLFW_LIB_ENABLE
   GLFWwindow * get_glfw_window_ptr();
+
+  void switchFullScreen();
 #endif
 
 #ifdef __linux__
