@@ -90,45 +90,62 @@ namespace std {
       return ((hash<glm::vec3>()(vertex.pos) ^
                (hash<glm::vec4>()(vertex.color) ^
                 (hash<glm::vec3>()(vertex.normal)) << 1)) >>
-                                                          1) ^
+              1) ^
              (hash<glm::vec2>()(vertex.uv) << 1);
     }
   };
 }
 
-class uniformBuffer {
-
+/**
+ * @brief base struct for buffers what send data to shaders
+ */
+struct uniformBuffer {
+  //Set common fields
+  glm::uvec4 unique_id{0, 0, 0, 0};
 };
 
 /**
  * @brief uniform object buffer
  */
 struct UniformBufferObject : public uniformBuffer {
-  glm::mat4 model;
-  glm::mat4 view;
-  glm::mat4 proj;
-  glm::mat4 normal;
-  glm::vec4 lightPositon;
+  glm::mat4 model{};
+  glm::mat4 view{};
+  glm::mat4 proj{};
+  glm::vec4 viewPos{};
+  glm::vec4 lightPositon{};
 };
+
 /**
- * @brief
+ * @brief buffer for line object
+ */
+struct UniformBufferLine : public uniformBuffer {
+  glm::mat4 view{};
+  glm::mat4 proj{};
+  glm::vec4 viewPos{};
+};
+
+/**
+ * @brief buffer for 2d objects
  *
  */
 struct UniformBuffer2D : public uniformBuffer {
-  glm::mat4 projection;
-  glm::mat4 modelView;
-  glm::mat4 view;
-  glm::vec4 viewPos;
+  glm::mat4 projection{};
+  glm::mat4 model{};
+  glm::mat4 view{};
+  glm::vec4 viewPos{};
+  glm::vec2 viewPortDim{};
 };
+
 /**
- * @brief
+ * @brief buffer for sky box
  *
  */
 struct UniformBufferSkyBox {
-  glm::mat4 proj;
-  glm::mat4 view;
-  glm::mat4 model;
+  glm::mat4 proj{};
+  glm::mat4 view{};
+  glm::mat4 model{};
 };
+
 /**
  * @brief uniform particle buffer
  */
@@ -139,11 +156,13 @@ struct UniformBufferParticle : public uniformBuffer {
   glm::vec2 viewportDim{};
   float pointSize = 10.f;
 };
+
 /**
  * @brief uniform shadows buffer
  */
 struct UniformBufferShadows : public uniformBuffer {
 };
+
 /**
  * @brief uniform tesselation buffer
  */
@@ -158,25 +177,33 @@ struct UniformBufferTessellation : public uniformBuffer {
   // Desired size of tessellated quad patch edge
   float tessellatedEdgeSize = 20.0f;
 };
+
 /**
- * @brief
+ * @brief buffer for transparent objects
  *
  */
 struct UniformBufferTransparent : public uniformBuffer {
-  glm::mat4 projection;
-  glm::mat4 modelview;
-  glm::mat4 model;
-  glm::vec4 lightPositon;
+  glm::mat4 projection{};
+  glm::mat4 modelview{};
+  glm::mat4 model{};
+  glm::vec4 lightPositon{};
 };
 
+/**
+ * @brief buffer for particle gpu
+ */
 struct UniformBufferParticleGPU : public uniformBuffer {
-  float deltaT{};              //		Frame delta time
-  float destX{};              //		x position of the attractor
-  float destY{};              //		y position of the attractor
-  float destZ{};              //		z position of the attractor
-  float estLifetime = 1;          //  time to live
+  float deltaT{}; //		Frame delta time
+  float destX{}; //		x position of the attractor
+  float destY{}; //		y position of the attractor
+  float destZ{}; //		z position of the attractor
+  float estLifetime = 1; //  time to live
   int32_t particleCount = 256;
 };
+
+/**
+ * @brief buffer for particle gpu position
+ */
 
 struct UniformBufferParticleGPUPosition : public uniformBuffer {
   glm::mat4 projection;
@@ -186,6 +213,9 @@ struct UniformBufferParticleGPUPosition : public uniformBuffer {
   alignas(16) glm::vec3 emiter_position;
 };
 
+/**
+ * @brief buffer for animate models
+ */
 
 struct UniformBufferAnimate : public uniformBuffer {
   glm::mat4 projection;
@@ -194,17 +224,14 @@ struct UniformBufferAnimate : public uniformBuffer {
 };
 
 /**
- * @brief all buffers struct
+ * @brief struct for send manage data to shader
  */
-//struct uniformsBuffers {
-//    // fill this struct with all uni buffers for all type of objects
-//    UniformBufferObject object;
-//    UniformBufferSkyBox skybox;
-//    UniformBufferParticle part_object;
-//    UniformBufferParticle shadow_object;
-//    UniformBufferTessellation tesselation_object;
-//    UniformBufferTransparent transparent_object;
-//};
+struct managePushConstant {
+  glm::vec2 mousePos{0, 0}; ///< Mouse position vec2 for fragment shader
+  uint32_t selected_unique_ID = 0; ///< For encapsulation model like gltf model
+  uint32_t depth_array_value = DEPTH_ARRAY_SCALE; ///< Set depth array value for check on z coord
+};
+
 /**
  * @brief Particle enum class
  */
@@ -220,7 +247,7 @@ enum class ParticleComponent {
 /**
  * @brief Particle struct create particle objects
  */
-struct PM_IO_VULKAN_EXPORT Particle {
+struct /*PM_IO_VULKAN_EXPORT*/ Particle {
   glm::vec4 pos;
   glm::vec4 color;
   float alpha;
@@ -251,13 +278,14 @@ struct PM_IO_VULKAN_EXPORT Particle {
 // SSBO particle declaration
 //#pragma pack (push,1)
 struct ParticleGPU {
-  alignas(16) glm::vec3 pos;                // Particle position
-  alignas(16) glm::vec3 vel;               // Particle velocity
-  alignas(16) glm::vec3 gradientPos;        // Texture coordinates for the gradient ramp map
+  alignas(16) glm::vec3 pos; // Particle position
+  alignas(16) glm::vec3 vel; // Particle velocity
+  alignas(16) glm::vec3 gradientPos; // Texture coordinates for the gradient ramp map
   alignas(16) glm::vec3 randomPos;
   float estLifetime;
   float lifeTime;
 };
+
 //#pragma pack(pop)
 struct Vert {
   int count;
@@ -268,30 +296,19 @@ struct Ind {
   int count;
   enma::Buffer buffer;
 };
+
 /**
  * @brief model type struct enum class
  */
 enum class model_type : uint8_t {
-  FROMOBJ,
-  FROMKTX
+  from_obj_file,
+  from_ktx_file
 };
 
 /**
  * @brief Model class
  */
-//struct BufferModel : public Object {
-//	Vertex vertex;
-//
-//	BufferModel(uint32_t *buffer) : Object() {
-//	}
-//
-//private:
-//	std::vector<Vertex> vertices;
-//	std::vector<uint32_t> indices;
-//};
-
 struct PM_IO_VULKAN_EXPORT Model : public Object {
-
   UniformBufferObject object_ubo{};
 
   Vertex vertex{};
@@ -302,13 +319,13 @@ struct PM_IO_VULKAN_EXPORT Model : public Object {
   glm::vec3 currentPos;
 
   Model(uint32_t *buffer, uint32_t *_ind, uint32_t shape_num,
-        model_type _type = model_type::FROMOBJ);
+        model_type _type = model_type::from_obj_file);
 
   void initialization() override;
 
   void updateMapped() override;
 
-  explicit Model(std::string _path, model_type _type = model_type::FROMOBJ);;
+  explicit Model(std::string _path, model_type _type = model_type::from_obj_file);;
 
   void draw(VkCommandBuffer model_buffer) override;
 
@@ -394,6 +411,7 @@ private:
   Vert vert;
   Ind ind;
 };
+
 ///\Defined properties
 
 /**
@@ -406,7 +424,6 @@ private:
 #endif
 
 struct PM_IO_VULKAN_EXPORT Partical_Model_CPU : public Object {
-
   UniformBufferParticle particl_ubo;
 
   Particle particle{};
@@ -434,49 +451,29 @@ struct PM_IO_VULKAN_EXPORT Partical_Model_CPU : public Object {
    *
    * @param _count
    */
-  void set_count(unsigned int _count) {
-    particle_count = _count;
-  };
+  void set_count(unsigned int _count);;
 
   /**
    *
    * @param _radius
    */
-  void set_radius(float _radius) {
-    radius = _radius;
-  };
+  void set_radius(float _radius);;
 
   /**
    *
    * @param position
    * TODO: create glm::vec4 for change direction
    */
-  void set_position(glm::vec3 position) {
-    emitterPos = position;
-  };
+  void set_position(glm::vec3 position);;
 
   //Поовернуть в заданном направлении
-  void set_direction(glm::vec3 direction) {
-    //err guard
-    if (direction == glm::vec3(0, 0, 0))
-      return;
-
-    direction = glm::normalize(direction);
-    if (lastDirection == direction)//if nothing changed
-      return;
-
-    minVel = minVel_base * direction;
-    maxVel = maxVel_base * direction;
-    lastDirection = direction;
-  }
+  void set_direction(glm::vec3 direction);
 
   /**
    *
    * @param value
    */
-  void set_alpha(float value) {
-    alpha = value;
-  }
+  void set_alpha(float value);
 
   VkDescriptorImageInfo *get_descriptor_image(size_t tex_idx) override;
 
@@ -497,14 +494,7 @@ struct PM_IO_VULKAN_EXPORT Partical_Model_CPU : public Object {
 
   void loadTexture(VkImageViewType type = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D) override;
 
-  /**
-   * @brief
-   */
   void destroy() override;
-
-  /**
-   *
-   */
 
   void createDescriptorSets() override;
 
@@ -558,7 +548,7 @@ struct PM_IO_VULKAN_EXPORT Partical_Model_CPU : public Object {
 
 // Resources for the compute part of the example
 
-struct PM_IO_VULKAN_EXPORT Partical_Model_GPU : public Object {
+struct PM_IO_VULKAN_EXPORT Partical_Model_GPU final : public Object {
   struct {
     VkPipelineVertexInputStateCreateInfo inputState;
     std::vector<VkVertexInputBindingDescription> bindingDescriptions;
@@ -567,7 +557,7 @@ struct PM_IO_VULKAN_EXPORT Partical_Model_GPU : public Object {
 
   UniformBufferParticleGPU ubo_gpu_particl;
   UniformBufferParticleGPUPosition ubo_pos_particle;
-  enma::Buffer storageBuffer;
+  //  enma::Buffer storageBuffer;
 
   ParticleGPU particle{};
 
@@ -575,43 +565,35 @@ struct PM_IO_VULKAN_EXPORT Partical_Model_GPU : public Object {
 
   ~Partical_Model_GPU() override = default;
 
-  void set_count(unsigned int _count) {
-    particle_count = _count;
-  };
+  /**
+   * @brief change count of emitted particles
+   * @param _count
+   */
+  void set_count(unsigned int _count);;
 
   /**
-   *
+   * @brief function set radius of emitted particles
    * @param _radius
    */
-  void set_radius(float _radius) {
-    radius = _radius;
-  };
+  void set_radius(float _radius);;
 
   /**
-   *
+   * @brief function for set new position of emitted particles center
    * @param position
-   * TODO: create glm::vec4 for change direction
    */
-  void set_position(glm::vec3 position) {
-    this->ubo_pos_particle.emiter_position= position;
-  };
-
-  //Поовернуть в заданном направлении
-  void set_direction(glm::vec3 direction) {
-    //err guard
-    //direction *= 10;
-    this->ubo_gpu_particl.destX = direction.x;
-    this->ubo_gpu_particl.destY = direction.y;
-    this->ubo_gpu_particl.destZ = direction.z;
-  }
+  void set_position(glm::vec3 position);;
 
   /**
-   *
+   * @brief function for rotate to direction
+   * @param direction
+   */
+  void set_direction(glm::vec3 direction);
+
+  /**
+   * @brief function set alpha value for emitted particles
    * @param value
    */
-  void set_alpha(float value) {
-    alpha = value;
-  }
+  void set_alpha(float value);
 
   // Resources for the compute part of the example
 
@@ -639,9 +621,9 @@ struct PM_IO_VULKAN_EXPORT Partical_Model_GPU : public Object {
 
   void preparePipeline() override;
 
-  void prepareCompute() const;
+  void prepareCompute();
 
-  void buildComputeCommandBuffer() const;
+  void buildComputeCommandBuffer();
 
   void setDescriptorLayout() override;
 
@@ -695,8 +677,7 @@ struct PM_IO_VULKAN_EXPORT Partical_Model_GPU : public Object {
 #define PARTICLE_COUNT 1024*4
 // Subpass Object
 
-struct PM_IO_VULKAN_EXPORT Transparent_Model : public Model {
-
+struct PM_IO_VULKAN_EXPORT Transparent_Model final : public Model {
   UniformBufferTransparent trn_ubo{};
 
   Transparent_Model(std::string _path);
@@ -714,13 +695,11 @@ struct PM_IO_VULKAN_EXPORT Transparent_Model : public Model {
   void createAdditinalBuffer() override;
 };
 
-struct PM_IO_VULKAN_EXPORT Terrian_Model : public Model {
-
-
+struct PM_IO_VULKAN_EXPORT Terrain_Model final : public Model {
   UniformBufferTessellation tesselation_ubo;
 
-  explicit Terrian_Model(std::string _path,
-                         model_type _type = model_type::FROMKTX);;
+  explicit Terrain_Model(std::string _path,
+                         model_type _type = model_type::from_ktx_file);;
 
   VkPipelineTessellationStateCreateInfo tesselationState{};
   std::vector<VkDynamicState> dynamicStateEnables;
@@ -743,8 +722,9 @@ struct PM_IO_VULKAN_EXPORT Terrian_Model : public Model {
 };
 
 struct PM_IO_VULKAN_EXPORT GLTF_Model : public Object {
-
   UniformBufferObject gltf_ubo{};
+
+  managePushConstant manage_constant;
 
   std::string obj_path;
 
@@ -756,9 +736,15 @@ struct PM_IO_VULKAN_EXPORT GLTF_Model : public Object {
 
   void updateMapped() override;
 
+  void updateUBO(UniformBufferObject *data, size_t mesh_id);
+
   Vertex vertex{};
 
   void destroy() override;
+
+  uint32_t getNodesSize() const;
+
+  uint32_t getLinearNodesSize() const;
 
   uint32_t getMaterialsSize() const;
 
@@ -782,11 +768,15 @@ struct PM_IO_VULKAN_EXPORT GLTF_Model : public Object {
 
   void setDescriptorLayout() override;
 
-  void createFramebuffers(VulkanSwapChain *vkSwapChain) override {}
+  void createFramebuffers(VulkanSwapChain *vkSwapChain) override {
+  }
 
-  void createRenderPass(VkFormat format) override {}
+  void createRenderPass(VkFormat format) override {
+  }
 
   void createUniformBuffer() override;
+
+  void set_visible_node(size_t index, bool flag);
 
   VkDeviceSize getBufferSize() override;
 
@@ -802,25 +792,43 @@ struct PM_IO_VULKAN_EXPORT GLTF_Model : public Object {
 
   void createAdditinalBuffer() override;
 
+  void releaseBarrier(VkCommandBuffer _buffer) override;
+
+  void readShaderData() override;
+
+  /**
+   * @brief function return id number of selected object in gltf model
+   * if 0 not selected any object
+   * @return id number of selected object in gltf model
+   */
+  uint32_t idSelected() const;
+
   class GLTF_CImpl;
+
+private:
+  void prepareInputs();
+
+  void prepareCompute();
+
+  void prepareBuildComputeBuffer();
+
+  void prepareUniformBuffers();
+
+  glm::vec2 mouse_vec2_;
+  uint32_t selectedId = 0;
 
 protected:
   std::unique_ptr<GLTF_CImpl> u_ptr_model;
 };
 
-struct PM_IO_VULKAN_EXPORT GLTF_Model_Animate : public Object {
-
+struct PM_IO_VULKAN_EXPORT GLTF_Model_Animate final : public Object {
   UniformBufferAnimate gltf_animate_ubo;
+
   struct DescriptorSetLayouts {
     VkDescriptorSetLayout matrices;
     VkDescriptorSetLayout textures;
     VkDescriptorSetLayout jointMatrices;
   } descriptorSetLayouts{};
-
-//	struct desc_buff {
-//		enma::Buffer buffer;
-//		VkDescriptorSet descriptor;
-//	};
 
   explicit GLTF_Model_Animate(std::string object_path);
 
@@ -836,7 +844,8 @@ struct PM_IO_VULKAN_EXPORT GLTF_Model_Animate : public Object {
 
   void loadTexture(VkImageViewType type = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D) override;
 
-  void createFramebuffers(VulkanSwapChain *vkSwapChain) override {}
+  void createFramebuffers(VulkanSwapChain *vkSwapChain) override {
+  }
 
   void createUniformBuffer() override;
 
@@ -874,11 +883,12 @@ struct PM_IO_VULKAN_EXPORT GLTF_Model_Animate : public Object {
 
 private:
   std::string obj_path;
+
 protected:
   std::unique_ptr<AnimGLTF_Model_Impl> u_ptr_model;
 };
 
-struct PM_IO_VULKAN_EXPORT GLTF_SkyBox : public GLTF_Model {
+struct PM_IO_VULKAN_EXPORT GLTF_SkyBox final : public GLTF_Model {
 #define FB_DIM 256
 #define FB_COLOR_FORMAT VK_FORMAT_R8G8B8A8_UNORM
 
@@ -904,6 +914,14 @@ struct PM_IO_VULKAN_EXPORT GLTF_SkyBox : public GLTF_Model {
 
   void createRenderPass(VkFormat format) override;
 
+  void createDescriptorSets() override;
+
+  void createDescriptorPool() override;
+
+  void preparePipeline() override;
+
+  void createUniformBuffer() override;
+
   void bloomRender();
 
   void prepareOffscreenFramebuffer(FrameBuffer *frameBuf, VkFormat colorFormat, VkFormat depthFormat);
@@ -914,35 +932,31 @@ struct PM_IO_VULKAN_EXPORT GLTF_SkyBox : public GLTF_Model {
 // Max. number of chars the text overlay buffer can hold
 #define TEXTOVERLAY_MAX_CHAR_COUNT 2048
 
-struct PM_IO_VULKAN_EXPORT TextOverlay //: public Object
-{
+//TODO: Make universal TEXT OBJECT as PARENT for ANOTHER like OVERLAY OR TEXT ON BOARD
+struct PM_IO_VULKAN_EXPORT TextOverlay : public Object {
+
+  UniformBuffer2D text_ubo;
+
+  struct PushConstBlock {
+    glm::vec2 scale = {0,0};
+    glm::vec2 translate = {0,0};
+  } pushConstBlock;
+
 private:
-  VulkanDevice *vulkanDevice;
-
-  VkQueue queue;
-  VkFormat colorFormat;
-  VkFormat depthFormat;
-
   uint32_t *frameBufferWidth;
   uint32_t *frameBufferHeight;
-  float scale;
+  float scale = 1.0;
 
+
+  VkBuffer buffer{};
   VkSampler sampler{};
   VkImage image{};
   VkImageView view{};
-  VkBuffer buffer{};
-  VkDeviceMemory memory{};
   VkDeviceMemory imageMemory{};
-  VkDescriptorPool descriptorPool{};
-  VkDescriptorSetLayout descriptorSetLayout{};
-  VkDescriptorSet descriptorSet{};
-  VkPipelineLayout pipelineLayout{};
-  VkPipelineCache text_pipelineCache{};
-  VkPipeline pipeline{};
-  VkRenderPass renderPass{};
+  VkDeviceMemory memory{};
+  // VkDescriptorPool descriptorPool{};
+  // VkDescriptorSetLayout descriptorSetLayout{};
   VkCommandPool commandPool{};
-  std::vector<VkFramebuffer *> frameBuffers;
-  std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
   // Pointer to mapped vertex buffer
   glm::vec4 *mapped = nullptr;
@@ -959,30 +973,25 @@ public:
 
   std::vector<VkCommandBuffer> cmdBuffers;
 
-  TextOverlay(
-      VulkanDevice *vulkanDevice,
-      VulkanSwapChain *vkSwapChain,
-      VkQueue queue,
-      VkFormat colorformat,
-      VkFormat depthformat,
-      uint32_t *framebufferwidth,
-      uint32_t *framebufferheight,
-      float scale,
-      std::vector<VkPipelineShaderStageCreateInfo> shaderstages);
+  TextOverlay();
 
-  ~TextOverlay();
+  ~TextOverlay() override;
 
   // Prepare all vulkan resources required to render the font
   // The text overlay uses separate resources for descriptors (pool, sets, layouts), pipelines and command buffers
   void prepareResources();
 
   // Prepare a separate pipeline for the font rendering decoupled from the main application
-  void preparePipeline();
+  void preparePipeline() override;
 
   // Prepare a separate render pass for rendering the text as an overlay
   void prepareRenderPass();
 
   void createFramebuffers(VulkanSwapChain *vkSwapChain);
+
+  void updateScale(float nScale);
+
+  void updateFrameSize(uint32_t *width, uint32_t *height);
 
   // Map buffer
   void beginTextUpdate();
@@ -991,21 +1000,51 @@ public:
   // todo: drop shadow? color attribute?
   void addText(std::string text, float x, float y, TextAlign align);
 
+  void addPlateText(std::string text, float x, float y, TextAlign align);
+
   // Unmap buffer and update command buffers
   void endTextUpdate();
 
-  // Needs to be called by the application
-  void updateCommandBuffers();
+  void draw(VkCommandBuffer _buffer) override;
+
+  void initialization() override;
+
+  VkDeviceSize getBufferSize() override;
+
+  uint32_t getTexturesSize() override;
+
+  VkDescriptorImageInfo *get_descriptor_image(size_t tex_idx) override;
+
+  viBuffer *getBuffer() override;
+
+  std::vector<uint32_t> *getIndices() override;
+
+  void loadTexture(VkImageViewType type) override;
+
+  void destroy() override;
+
+  void setObjectInfo(pipeline_parameters *_parameters, VkGraphicsPipelineCreateInfo *pipelineInfo) override;
+
+  void update(float frame_time) override;
+
+  void prepare() override;
+
+  void setDescriptorLayout() override;
+
+  void createRenderPass(VkFormat format) override;
+
+  void createDescriptorSets() override;
+
+  void createDescriptorPool() override;
+
+  void createUniformBuffer() override;
+
+  void updateMapped() override;
+
+  void createAdditinalBuffer() override;
 };
 
-// // Vertex layout for this example
-// struct Plane_Vertex
-// {
-//     float pos[3];
-//     float uv[2];
-//     float normal[3];
-// };
-struct PM_IO_VULKAN_EXPORT Model3D : public Object {
+struct PM_IO_VULKAN_EXPORT Model3D final : public Object {
   UniformBufferObject model3d_ubo{};
   Vertex vertex{};
   enma::Buffer vertexBuffer;
@@ -1020,6 +1059,7 @@ struct PM_IO_VULKAN_EXPORT Model3D : public Object {
   // For generated texture
 
   uint8_t *texture_data{};
+
   struct ImageInfo {
     uint32_t texture_width = 320;
     uint32_t texture_height = 256;
@@ -1053,7 +1093,8 @@ struct PM_IO_VULKAN_EXPORT Model3D : public Object {
 
   std::vector<uint32_t> *getIndices() override;
 
-  void prepare() override {};
+  void prepare() override {
+  };
 
   void setDescriptorLayout() override;
 
@@ -1068,7 +1109,8 @@ struct PM_IO_VULKAN_EXPORT Model3D : public Object {
 
   viBuffer *getBuffer() override;
 
-  void update(float frame_time) override {}
+  void update(float frame_time) override {
+  }
 
   VkDescriptorImageInfo *get_descriptor_image(size_t tex_idx) override;
 
@@ -1081,8 +1123,25 @@ struct PM_IO_VULKAN_EXPORT Model3D : public Object {
   void createAdditinalBuffer() override;
 };
 
-struct PM_IO_VULKAN_EXPORT Model2D : public Object {
+struct PM_IO_VULKAN_EXPORT Model2D final : public Object {
   UniformBuffer2D model2d_ubo{};
+
+  TextOverlay *text;
+
+  /**
+   * For geometry shader
+   */
+  struct PushConstantTo {
+    float line_thick = 1.0;
+    int segments = 16;
+    bool dash = false;
+  } push_constants;
+
+  struct PushConstBlock {
+    glm::vec2 scale;
+    glm::vec2 translate;
+  } pushConstBlock;
+
   Vertex vertex{};
   enma::Buffer vertexBuffer;
   enma::Buffer indexBuffer;
@@ -1096,6 +1155,7 @@ struct PM_IO_VULKAN_EXPORT Model2D : public Object {
   // For generated texture
 
   uint8_t *texture_data{};
+
   struct ImageInfo {
     uint32_t texture_width = 320;
     uint32_t texture_height = 256;
@@ -1111,8 +1171,36 @@ struct PM_IO_VULKAN_EXPORT Model2D : public Object {
 
   void updateMapped() override;
 
-  ~Model2D() override = default;
+  ~Model2D() override {
+    delete text;
+  }
 
+  void modelVertexUpdate(const std::vector<Vertex>& data);
+  ////////////// Text Overlay function BLOCK BEGIN ////////////////
+  /**
+   * @brief  Update and base settings for begin to draw text
+   */
+  void plateTextUpdate();
+
+  /**
+   * @brief add string to plate function
+   * @param str
+   * @param x
+   * @param y
+   */
+  void addTextToPlate(const std::string &str,float x, float y);
+
+  /**
+   * @brief End text update
+   */
+  void plateTextEnd();
+
+  ///////////// Text Overlay function BLOCK END //////////////
+  /**
+   *
+   * @param _vertices
+   * @param _indices
+   */
   void generateQuad(std::vector<Vertex> _vertices, std::vector<uint32_t> _indices);
 
   void destroy() override;
@@ -1129,7 +1217,8 @@ struct PM_IO_VULKAN_EXPORT Model2D : public Object {
 
   std::vector<uint32_t> *getIndices() override;
 
-  void prepare() override {};
+  void prepare() override {
+  };
 
   void setDescriptorLayout() override;
 
@@ -1144,7 +1233,8 @@ struct PM_IO_VULKAN_EXPORT Model2D : public Object {
 
   viBuffer *getBuffer() override;
 
-  void update(float frame_time) override {}
+  void update(float frame_time) override {
+  }
 
   VkDescriptorImageInfo *get_descriptor_image(size_t tex_idx) override;
 
@@ -1158,15 +1248,20 @@ struct PM_IO_VULKAN_EXPORT Model2D : public Object {
 };
 
 struct PM_IO_VULKAN_EXPORT Line : public Object {
+  UniformBufferLine line_ubo{};
 
-  UniformBufferObject line_ubo{};
+  struct PushConstantTo {
+    float line_thick = 1.0;
+    int segments = 16;
+    bool dash = false;
+  } push_constants;
 
   Vertex vertex{};
   enma::Buffer vertexBuffer;
   enma::Buffer indexBuffer;
   uint32_t indexCount{};
   std::vector<uint32_t> indices;
-  float line_thick = 0.005f;
+  float line_thick = 1.f;
   glm::vec4 color = {0.0f, 0.0f, 0.0f, 1.0f};
 
   VkDeviceSize bufferSize = sizeof(UniformBufferObject);
@@ -1184,6 +1279,9 @@ struct PM_IO_VULKAN_EXPORT Line : public Object {
 
   void destroy() override;
 
+  void updateLinePoints(const std::vector<Vertex> &new_points);
+
+  // TODO: add texture load on line
   void loadTexture(VkImageViewType type = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D) override;
 
   void preparePipeline() override;
@@ -1194,7 +1292,8 @@ struct PM_IO_VULKAN_EXPORT Line : public Object {
 
   std::vector<uint32_t> *getIndices() override;
 
-  void prepare() override {};
+  void prepare() override {
+  };
 
   void setDescriptorLayout() override;
 
@@ -1209,7 +1308,8 @@ struct PM_IO_VULKAN_EXPORT Line : public Object {
 
   viBuffer *getBuffer() override;
 
-  void update(float frame_time) override {}
+  void update(float frame_time) override {
+  }
 
   VkDescriptorImageInfo *get_descriptor_image(size_t tex_idx) override;
 

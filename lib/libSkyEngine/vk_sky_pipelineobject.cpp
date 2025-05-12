@@ -58,7 +58,7 @@ void *pipelineObject::create_Model_3d(std::vector<Vertex> vertices, std::vector<
 }
 
 void *pipelineObject::create_Model_3d(std::string object_path) {
-    return reinterpret_cast<void *>(new Model(object_path, model_type::FROMOBJ));
+    return reinterpret_cast<void *>(new Model(object_path, model_type::from_obj_file));
 }
 
 void *pipelineObject::create_Particle_cpu() {
@@ -77,13 +77,16 @@ pipelineObject::pipelineObject(ePipelineObjectType type, const std::vector<Verte
         case ePipelineObjectType::LINE:
             object = create_Line(vertices);
             break;
+        case ePipelineObjectType::TEXT_OVERLAY:
+            object = create_TextOverlay();
+            break;
         default:
             break;
     }
 }
 
 void *pipelineObject::create_Terrian(std::string object_path) {
-    return object = reinterpret_cast<void *>(new Terrian_Model(object_path, model_type::FROMKTX));
+    return object = reinterpret_cast<void *>(new Terrain_Model(std::move(object_path), model_type::from_ktx_file));
 }
 
 void *pipelineObject::create_Transparent_3d(std::string object_path) {
@@ -112,6 +115,10 @@ void *pipelineObject::create_Model_2D(std::vector<Vertex> vertices, std::vector<
 
 void *pipelineObject::create_Line() {
     return object = reinterpret_cast<void *>(new Line());
+}
+
+void *pipelineObject::create_TextOverlay() {
+    return object = reinterpret_cast<void *>(new TextOverlay());
 }
 
 void *pipelineObject::create_Line(std::vector<Vertex> vertices) {

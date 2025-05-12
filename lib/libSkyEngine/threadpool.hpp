@@ -15,7 +15,7 @@
 
 // make_unique is not available in C++11
 // Taken from Herb Sutter's blog (https://herbsutter.com/gotw/_102/)
-#if __cplusplus <= 201103L
+#if __cplusplus <= 201103L && __linux__
 template<typename T, typename ...Args>
 std::unique_ptr<T> make_unique(Args&& ...args)
 {

@@ -8,6 +8,7 @@ layout (location = 0) out vec2 outUV;
 
 layout (set = 0, binding = 0) uniform UBO 
 {
+	uvec4 unique_id;
 	mat4 mvp;
 } ubo;
 

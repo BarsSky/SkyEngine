@@ -27,7 +27,8 @@ enum class ePipelineObjectType : unsigned int {
     FROM_BUFFER,
     TERRIAN_OBJECT,
     PARTICLE_CPU_OBJECT,
-    PARTICLE_GPU_OBJECT
+    PARTICLE_GPU_OBJECT,
+    TEXT_OVERLAY
 };
 
 /**
@@ -70,6 +71,8 @@ struct pipelineObject {
     void *create_Model_2D(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
 
     void *create_Line();
+
+    void *create_TextOverlay();
 
     void *create_Line(std::vector<Vertex> vertices);
 

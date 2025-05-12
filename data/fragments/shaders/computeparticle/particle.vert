@@ -7,8 +7,9 @@ layout (location = 0) out vec4 outColor;
 layout (location = 1) out vec2 outGradientPos;
 
 
-layout (binding = 2) uniform UBO
+layout (set =1,binding = 2) uniform UBO
 {
+    uvec4 uinique_id;
     mat4 projection;
     mat4 modelview;
     mat4 model;

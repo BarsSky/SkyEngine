@@ -17,6 +17,8 @@ Screen VKSky::CImpl::getScreen() {
   Screen _op;
   _op.width = vDevice.Width();
   _op.height = vDevice.Height();
+  _op.uWidth = vDevice.uWidth();
+  _op.uHeight = vDevice.uHeight();
 #ifdef GLFW_LIB_ENABLE
   _op.window = vDevice.get_glfw_window_ptr();
 #endif
@@ -39,7 +41,7 @@ void VKSky::CImpl::version_init(toolConfig *app, toolConfig *eng) {
 }
 
 #ifdef QT_LIB_ENABLE
-VkWidget *VKDisplay::CImpl::get_vk_widget(QWidget *parent)
+VkWidget *VKSky::CImpl::get_vk_widget(QWidget *parent)
 {
     vulkan_widget = vDevice.init_widget(parent);
     return vulkan_widget;
@@ -239,6 +241,10 @@ void VKSky::CImpl::cleanup() {
     obj->cleanObjectSwapChain();
 
   vkDestroyPipelineCache(vDevice.logicalDevice, pipelineCache, nullptr);
+
+  for (auto &obj: all_objects)
+    vkDestroyPipelineCache(vDevice.logicalDevice, obj->pipelineCache, nullptr);
+
   for (size_t i = 0; i < all_objects.size(); i++) {
     vkDestroyPipeline(vDevice.logicalDevice, all_objects.at(i)->pipeline, nullptr);
     vkDestroyPipelineLayout(vDevice.logicalDevice, all_objects.at(i)->pipelineLayout, nullptr);
@@ -262,7 +268,7 @@ void VKSky::CImpl::cleanup() {
                                  nullptr);
 
   for (auto &all_object: all_objects)
-    all_object->destroy();
+    all_object->object_destroy();
 
   vDevice.clearQueryPool();
 
@@ -369,7 +375,7 @@ void VKSky::CImpl::manageViewportDraw(unsigned int current_buff) {
     vkCmdSetScissor(commandBuffers[current_buff], 0, 1, &scissorRects[vc]);
     //                vkCmdSetLineWidth(commandBuffers[i],1.0f);
     for (auto &obj: std_objects)
-      obj->draw(commandBuffers[current_buff]);
+      obj->object_draw(commandBuffers[current_buff]);
   }
   if (!trn_objects.empty()) {
     vkCmdNextSubpass(commandBuffers[current_buff], VK_SUBPASS_CONTENTS_INLINE);
@@ -417,7 +423,7 @@ void VKSky::CImpl::threadRenderFunction(uint32_t threadIndex, uint32_t object_in
 
   // vkCmdBeginRenderPass(cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
-  object->draw(cmdBuffer);
+  object->object_draw(cmdBuffer);
 
   // vkCmdEndRenderPass(cmdBuffer);
 
@@ -626,7 +632,7 @@ void VKSky::CImpl::prepareFence() {
   prepareRender();
 }
 
-// void VKDisplay::CImpl::implLoop() {
+// void VKSky::CImpl::implLoop() {
 //     //#ifdef QT_LIB_ENABLE
 //     //        while (!done) {
 //     //            if (vulkan_widget != nullptr)
@@ -809,6 +815,8 @@ void VKSky::CImpl::buildCommandBuffer() {
     VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffers[i]));
   }
   vkQueueWaitIdle(vDevice.queue);
+
+  readSharedData();
 }
 
 void VKSky::CImpl::drawUI(VkCommandBuffer commandBuffer) {
@@ -828,6 +836,10 @@ void VKSky::CImpl::drawUI(VkCommandBuffer commandBuffer) {
   }
 }
 
+
+void VKSky::CImpl::updateCommandBuffer() {
+  buildCommandBuffer();
+}
 
 void VKSky::CImpl::createCommandPool() {
   // QueueFamilyIndices queueFamilyIndices = vDevice.findQueueFamilies(vDevice.getPhysicalDevice());
@@ -928,7 +940,6 @@ void VKSky::CImpl::initVulkan() {
   createGraphicsPipeline();
   // Prepare UI
   createUI();
-
   vDevice.setupQueryResultBuffer();
 
   createUniformBuffers();
@@ -946,6 +957,7 @@ void VKSky::CImpl::initVulkan() {
   submitInfo.signalSemaphoreCount = 1;
   submitInfo.pSignalSemaphores = &vDevice.semaphores.renderComplete;
 
+
   buildCommandBuffer();
   prepared = true;
 }
@@ -961,23 +973,23 @@ void VKSky::CImpl::do_magick() {
 
 void VKSky::CImpl::createUniformBuffers() {
   for (auto &all_object: all_objects)
-    all_object->createUniformBuffer();
+    all_object->createAllBuffers();
 }
 
 void VKSky::CImpl::createDescriptorPool() {
   for (size_t i = 0; i < all_objects.size(); i++)
-    all_objects.at(i)->createDescriptorPool();
+    all_objects.at(i)->objectCreateDescriptorPool();
 }
 
 void VKSky::CImpl::createDescriptorSets() {
   for (size_t j = 0; j < all_objects.size(); j++)
-    all_objects.at(j)->createDescriptorSets();
+    all_objects.at(j)->objectCreateDescriptorSets();
 }
 
 // Virtual function
 void VKSky::CImpl::createDescriptorSetLayout() {
   for (auto draw: all_objects)
-    draw->setDescriptorLayout();
+    draw->objectSetDescriptorLayout();
 }
 
 // Function can change not conceptual
@@ -1012,6 +1024,7 @@ void VKSky::CImpl::LoadAssets() {
 }
 
 void VKSky::CImpl::viewChanged() {
+  updateCommandBuffer();
 }
 
 ThreadObject::ThreadObject(VkDevice *_device) {
@@ -1072,7 +1085,7 @@ VKSky::CImpl::~CImpl() {
 
 void VKSky::CImpl::run() { do_magick(); }
 
-void VKSky::CImpl::createAdditinalBuffer() {
+void VKSky::CImpl::createAdditinalBuffer() const {
   for (auto &obj: all_objects)
     obj->createAdditinalBuffer();
 }
@@ -1085,6 +1098,23 @@ void VKSky::CImpl::acquireBarrier(VkCommandBuffer _buffer) {
 void VKSky::CImpl::releaseBarrier(VkCommandBuffer _buffer) {
   for (auto &obj: all_objects)
     obj->releaseBarrier(_buffer);
+}
+
+void VKSky::CImpl::readSharedData() {
+  for (auto &obj: all_objects)
+    obj->readShaderData();
+}
+
+void VKSky::CImpl::set_new_window_size(int width, int height) {
+  //    *vDevice.Width() = width;
+  //    *vDevice.Height() = height;
+}
+
+void VKSky::CImpl::waitForCurrentFrameComplete() {
+  paused = true;
+  while (!m_signalFrame) {
+    std::this_thread::sleep_for(std::chrono::microseconds(1));
+  }
 }
 
 void VKSky::CImpl::updateOverlay() {
@@ -1152,18 +1182,6 @@ void VKSky::CImpl::createUI() {
     };
     uiOverlay.prepareResources(vDevice.get_glfw_window_ptr());
     uiOverlay.preparePipeline(pipelineCache, vDevice.renderPass, &VkSwapChain, vDevice.findDepthFormat());
-  }
-}
-
-void VKSky::CImpl::set_new_window_size(int width, int height) {
-  //    *vDevice.Width() = width;
-  //    *vDevice.Height() = height;
-}
-
-void VKSky::CImpl::waitForCurrentFrameComplete() {
-  paused = true;
-  while (!m_signalFrame) {
-    std::this_thread::sleep_for(std::chrono::microseconds(1));
   }
 }
 

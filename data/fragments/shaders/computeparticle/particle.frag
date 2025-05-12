@@ -1,7 +1,7 @@
 #version 450
 
-layout (binding = 0) uniform sampler2D samplerColorMap;
-layout (binding = 1) uniform sampler2D samplerGradientRamp;
+layout (set = 1,binding = 0) uniform sampler2D samplerColorMap;
+layout (set = 1,binding = 1) uniform sampler2D samplerGradientRamp;
 
 layout (location = 0) in vec4 inColor;
 layout (location = 1) in vec2 inGradientPos;
@@ -26,5 +26,5 @@ void main ()
 	color = texture(samplerGradientRamp, vec2(inGradientPos.x, 0.0));
 //
 	outFragColor.rgb = texture(samplerColorMap, gl_PointCoord).rgb*color.rgb*inGradientPos.y;
-	//outFragColor.a = inGradientPos.y;
+	outFragColor.a = inGradientPos.y;
 }

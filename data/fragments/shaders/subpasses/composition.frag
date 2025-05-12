@@ -18,6 +18,7 @@ struct Light {
 
 layout (binding = 3) uniform UBO 
 {
+	uvec4 unique_id;
 	vec4 viewPos;
 	Light lights[NUM_LIGHTS];
 } ubo;

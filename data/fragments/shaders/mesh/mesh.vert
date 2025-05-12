@@ -7,8 +7,9 @@ layout (location = 3) in vec4 inColor;
 layout (location = 4) in vec4 inTangent;
 
 
-layout (binding = 0) uniform UBO 
+layout (set = 1, binding = 0) uniform UBO
 {
+	uvec4 unique_id;
 	mat4 model;
 	mat4 view;
 	mat4 projection;

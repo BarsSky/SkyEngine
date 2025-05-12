@@ -23,6 +23,8 @@
 #include <utility>
 #include <SkyEngine/vk_sky_texture.hpp>
 
+#define DEPTH_ARRAY_SCALE 4096 // TODO: make variable for change check depth
+
 struct PM_IO_VULKAN_EXPORT pipeline_parameters {
   /**
    * @brief Vulkan graphics pipeline parameters
@@ -57,15 +59,15 @@ enum class ObjectRenderFlags {
   STDOBJECT = 0,
   TRNOBJECT = 1,
   CMPTOBJECT = 2,
-  // ANTOBJECT = 1 << 1,
-  // ALL = TRNOBJECT | ANTOBJECT
+  ANTOBJECT = 1 << 1,
+  ALL = TRNOBJECT | ANTOBJECT
 };
 
 /**
  * @brief base struct for all object with virtual functions
  */
 struct PM_IO_VULKAN_EXPORT Object {
-  Object();
+  explicit Object();
 
   /**
    *
@@ -74,16 +76,52 @@ struct PM_IO_VULKAN_EXPORT Object {
 
   /**
    * @brief Set the Object Sheaders object
-   *
    */
   void setObjectShaders();;
 
   /**
    * @brief load shaders paths of object
-   *
    */
-  void load_object_shaders(std::vector<std::string> paths);;
+  void load_object_shaders(std::vector<std::string> paths);
 
+  /**
+   * @brief public function for draw object
+   * @param _buffer
+   */
+  void object_draw(VkCommandBuffer _buffer) {
+    if (!is_object_visible)
+      return;
+    /// TODO: Add draw description set for base manage functions
+    drawObjectBase(_buffer);
+    draw(_buffer);
+  }
+
+  /**
+   * @brief public function for call create descriptor pool
+   */
+  void objectCreateDescriptorPool() {
+    ///TODO: Add universal function for create base pool descriptor
+    createObjectBasePool();
+    createDescriptorPool();
+    allocateDescriptorPool();
+  };
+
+  /**
+   * @brief
+   */
+  void objectCreateDescriptorSets() {
+    ////TODO: Add universal function for create base descriptor set
+    createObjectBaseDescriptor();
+    createDescriptorSets();
+  };
+  /**
+ * @brief
+ */
+  void objectSetDescriptorLayout() {
+    ////TODO: Add universal function for create base descriptor layout
+    setObjectBaseLayout();
+    setDescriptorLayout();
+  };
   /**
    * @brief Initialization function for models
    *
@@ -141,11 +179,16 @@ struct PM_IO_VULKAN_EXPORT Object {
   VkDescriptorSet get_descriptor_set();
 
   /**
+    *@brief set visible property
+    *
+    */
+  void setVisibleProperty(bool flag);
+
+  /**
    * @brief Destroy the Object object
    *
    */
-  virtual ~Object();
-  ;
+  virtual ~Object();;
 
   void cleanObjectSwapChain();
 
@@ -202,6 +245,7 @@ struct PM_IO_VULKAN_EXPORT Object {
    */
   void load_textures_paths(std::vector<std::string> paths);;
 
+  void object_destroy();
   /**
    * @brief
    *
@@ -290,6 +334,14 @@ struct PM_IO_VULKAN_EXPORT Object {
   virtual void createPipelineCache();
 
   /**
+ * @brief create additinal compute command buffer if needed for object
+ */
+  void createAllBuffers() {
+    //TODO: Don't forgot Clear buffer
+    createUniqueBuffers();
+    createUniformBuffer();
+  }
+  /**
    * @brief create additinal compute command buffer if needed for object
    */
   virtual void createAdditinalBuffer() = 0;
@@ -305,19 +357,16 @@ struct PM_IO_VULKAN_EXPORT Object {
    */
   virtual void releaseBarrier(VkCommandBuffer _buffer) {
   };
+
   /**
    * @brief additional destroy for compute
    */
   virtual void additionalDestroy() {
   };
+
   /**
-   * @brief function for detect object
+   * @brief if create compute shader for model
    */
-  virtual void detectedObject() {
-  };
-  /**
-* @brief if create compute shader for model
-*/
   virtual void clearComputeBlock();
 
   //////////////>@brief COMPUTE BLOCK
@@ -325,13 +374,13 @@ struct PM_IO_VULKAN_EXPORT Object {
    * @brief get compute buffer
    * @return
    */
-  VkCommandBuffer *getComputeBuffer();
+  VkCommandBuffer *getComputeBuffer() const;
 
   /**
    * @brief get compute queue
    * @return
    */
-  VkQueue getComputeQueue();
+  VkQueue getComputeQueue() const;
 
   /**
    * @brief get compute semaphore
@@ -341,12 +390,21 @@ struct PM_IO_VULKAN_EXPORT Object {
 
   /**
    * @brief get graphic semaphore
-   * @return
+   * @return VkSemaphore
    */
-  VkSemaphore *getGraphicSemaphore();
+  VkSemaphore *getGraphicSemaphore() const;
+
+  /**
+ *  @brief get data from shader
+ */
+  virtual void readShaderData();
+
 
   // VK layouts
-  VkDescriptorSetLayout descriptorSetLayout{};
+  VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout pickDescriptorSetLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout computeDescriptorSetLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout descriptorSetLayoutImages = VK_NULL_HANDLE;
   // VkDescriptorSetLayout descriptorSetLayout_textures = VK_NULL_HANDLE;
   VkPipelineLayout pipelineLayout{};
   // Vk pipeline
@@ -392,7 +450,7 @@ struct PM_IO_VULKAN_EXPORT Object {
   VkDeviceMemory colorImageMemory = VK_NULL_HANDLE;
   VkImageView colorImageView = VK_NULL_HANDLE;
 
-  VkPipelineCache pipelineCache;
+  VkPipelineCache pipelineCache = VK_NULL_HANDLE;
 
   VkExtent2D *swapChainExtent{};
   VkSampler sampler{};
@@ -400,6 +458,14 @@ struct PM_IO_VULKAN_EXPORT Object {
   // согласно количеству объектов на поток
   std::vector<VkCommandBuffer> cmdBuffer;
   ObjectRenderFlags render_flags = ObjectRenderFlags::STDOBJECT;
+
+  void set_mouse_ptr(glm::vec2 * ptr_point) {
+    mouse_position = ptr_point;
+  }
+  //FIXME: DEPRECATED FUNCTION
+  void set_screen_ptr(glm::vec2 * ptr_point) {
+    screen_size = *ptr_point;
+  }
 
   /////////// Методы управления характеристиками объекта ////////////
   glm::vec3 obj_position = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -430,12 +496,46 @@ private:
 
   std::vector<VkShaderModule> shaderModules;
   /**
+   *  @brief Определяем все общие буфферы для объектов
+   */
+  void createUniqueBuffers();
+
+  /**
+   * @brief Clear unique buffers
+   */
+  void clearUniqueBuffers();
+
+  /**
+   *
+   */
+  void drawObjectBase(VkCommandBuffer _buffer);
+  /**
+   *
+   */
+  void createObjectBaseDescriptor();
+  /**
+   *
+   */
+  void createObjectBasePool();
+
+  /**
+   *
+   */
+  void allocateDescriptorPool();
+  /**
+   *
+   */
+  void setObjectBaseLayout();
+  /**
    *  Характеристсики любого объекта
    */
   float *x{}, *y{}, *z{};
   float *omega_x{}, *omega_y{}, *omega_z{}, *omega_w{};
 
+  VkDescriptorSet pickDescriptor{};
+
   struct ComputeInst;
+
 protected:
   std::vector<VkPipelineShaderStageCreateInfo> shadersStages;
   VulkanDevice *vDevice{};
@@ -447,23 +547,37 @@ protected:
   viBuffer trn_buff{};
   //COMPUTE BLOCK
   std::unique_ptr<ComputeInst> u_ptr_compute;
+  // DRAW BLOCK
+  bool is_object_visible = true;
+  glm::vec2 *mouse_position = nullptr;
+  glm::vec2 screen_size;
+  // Pick Object BLOCK
+  enma::Buffer pickObjectBuffer;
+  /**
+   * Vulkan vectors for pool descriptors layouts
+   */
+  std::vector<VkDescriptorPoolSize> vkPoolSizes{};
+  uint32_t poolDrawSize = 0;
+  // TODO: make as function for increase layout counter then add new layout in vector automaticaly
+  std::vector<VkDescriptorSetLayout> vkDescriptorLayouts{};// compare all layouts in one vector for pipline layout
 };
 
-
 struct Object::ComputeInst {
-  VulkanDevice *vDevice;
-  uint32_t queueFamilyIndex;          // Used to check if compute and graphics queue families differ and require additional barriers
-  enma::Buffer storageBuffer;          // (Shader) storage buffer object containing the particles
-  enma::Buffer uniformBuffer;          // Uniform buffer object containing particle system parameters
-  VkQueue queue;                                // Separate queue for compute commands (queue family may differ from the one used for graphics)
-  VkCommandPool commandPool;          // Use a separate command pool (queue family may differ from the one used for graphics)
-  VkCommandBuffer commandBuffer = VK_NULL_HANDLE;                // Command buffer storing the dispatch commands and barriers
-  VkSemaphore compute;                      // Execution dependency between compute & graphic submission
-  VkSemaphore graphic;                      // Execution dependency between compute & graphic submission
-  VkDescriptorSetLayout descriptorSetLayout;  // Compute shader binding layout
-  VkDescriptorSet descriptorSet;        // Compute shader bindings
-  VkPipelineLayout pipelineLayout;      // Layout of the compute pipeline
-  VkPipeline pipeline;            // Compute pipeline for updating particle positions
+  VulkanDevice *vDevice{};
+  uint32_t queueFamilyIndex{};
+  // Used to check if compute and graphics queue families differ and require additional barriers
+  enma::Buffer storageBuffer; // (Shader) storage buffer object containing the particles
+  enma::Buffer uniformBuffer; // Uniform buffer object containing particle system parameters
+  enma::Buffer hitBuffer; // hit buffer object for take data from compute shader
+  VkQueue queue{}; // Separate queue for compute commands (queue family may differ from the one used for graphics)
+  VkCommandPool commandPool{}; // Use a separate command pool (queue family may differ from the one used for graphics)
+  VkCommandBuffer commandBuffer = VK_NULL_HANDLE; // Command buffer storing the dispatch commands and barriers
+  VkSemaphore compute{}; // Execution dependency between compute & graphic submission
+  VkSemaphore graphic{}; // Execution dependency between compute & graphic submission
+  VkDescriptorSetLayout descriptorSetLayout{}; // Compute shader binding layout
+  VkDescriptorSet descriptorSet{}; // Compute shader bindings
+  VkPipelineLayout pipelineLayout{}; // Layout of the compute pipeline
+  VkPipeline pipeline{}; // Compute pipeline for updating particle positions
 
   void set_device(VulkanDevice *vDev) {
     vDevice = vDev;
@@ -471,6 +585,7 @@ struct Object::ComputeInst {
 
   void destroy() {
     storageBuffer.destroy();
+    hitBuffer.destroy();
     uniformBuffer.destroy();
     vkDestroyPipelineLayout(vDevice->logicalDevice, pipelineLayout, nullptr);
     vkDestroyDescriptorSetLayout(vDevice->logicalDevice, descriptorSetLayout, nullptr);

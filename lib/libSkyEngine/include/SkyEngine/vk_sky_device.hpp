@@ -79,8 +79,10 @@ public:
     // Унифицировать из
     //    int getWidth() const;
     //    int getHeight() const;
-    int *Width();
-    int *Height();
+    int *Width() const;
+    int *Height() const;
+    uint32_t *uWidth() const;
+    uint32_t *uHeight() const;
     bool qiut();
     void set_quit(bool flag);
 

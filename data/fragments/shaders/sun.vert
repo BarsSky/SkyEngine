@@ -5,8 +5,9 @@ layout (location = 1) in vec4 inColor;
 layout (location = 2) in vec2 inUV;
 layout (location = 3) in vec3 inNormal;
 
-layout (binding = 0) uniform UBO 
+layout (set = 1, binding = 0) uniform UBO
 {
+	uvec4 unique_id;
 	mat4 model;//position
 	mat4 view;
 	mat4 projection;

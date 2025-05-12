@@ -1,11 +1,12 @@
 #version 450
 
-layout (binding = 1) uniform sampler2D samplerColor;
+layout (set = 1, binding = 1) uniform sampler2D samplerColor;
 
 layout (location = 0) in vec2 inUV;
 layout (location = 1) in vec3 inNormal;
 layout (location = 2) in vec3 inViewVec;
 layout (location = 3) in vec3 inLightVec;
+layout (location = 4) in vec4 inColor;
 
 layout (location = 0) out vec4 outFragColor;
 
@@ -17,6 +18,6 @@ void main()
 //    vec3 N = normalize(inViewVec);
 //    vec3 R = reflect(-L, N);
 //    vec3 diffuse = max(dot(N,L), 0.0)* vec3(1.0);
-    outFragColor = vec4(color.rgb,1.0);
+    outFragColor = inColor*color;
 
 }

@@ -1,6 +1,6 @@
 #version 450
 
-layout (binding = 1) uniform sampler2D sColorMap;
+layout (set = 1, binding = 1) uniform sampler2D sColorMap;
 
 #define lightRadius 360.0
 

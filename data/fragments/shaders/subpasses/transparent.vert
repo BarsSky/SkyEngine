@@ -7,6 +7,7 @@ layout (location = 3) in vec2 inUV;
 
 layout (binding = 0) uniform UBO 
 {
+	uvec4 unique_id;
 	mat4 projection;
 	mat4 model;
 	mat4 view;

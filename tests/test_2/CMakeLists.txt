@@ -19,6 +19,10 @@ set(_PRIVATE_INCLUDE_DIR # директории указанные в этой �
     ${CMAKE_BINARY_DIR}/include
 )
 
+#if ((MSVC) AND (MSVC_VERSION GREATER_EQUAL 1914))
+#    target_compile_options(stxxl INTERFACE "/Zc:__cplusplus")
+#endif()
+
 #Препроцессоры устанавливаемые по умолчанию
 set(_PRIVATE_DEFINITIONS
     #
@@ -27,6 +31,10 @@ set(_PRIVATE_DEFINITIONS
     ELPP_NO_DEFAULT_LOG_FILE
     ELPP_THREAD_SAFE
 )
+
+if (MSVC)
+    list(APPEND _PRIVATE_DEFINITIONS _MSVC_LANG=201103L)
+endif ()
 
 # создаёт проект для исполняемого файла
 helper_add_executable(${_TARGET_NAME}
@@ -75,16 +83,16 @@ helper_target_link_libraries(${_TARGET_NAME}
 )
 
 #Здесь указываются необходимые для работы с исполняемым файлом 
-# install(DIRECTORY 
-# 		"./data/shaders/"
-# 		DESTINATION "${SHADER_DIRECTORY}"
-# 		COMPONENT applications #тип файла - настроечный
-# 		)
-# install(DIRECTORY 
-# 		"./data/models/"
+ install(DIRECTORY
+ 		"${CMAKE_SOURCE_DIR}/data/fragments/shaders/comp/"
+ 		DESTINATION "${SHADER_DIRECTORY}"
+ 		COMPONENT applications #тип файла - настроечный
+ 		)
+# install(DIRECTORY
+# 		"${CMAKE_SOURCE_DIR}/data/models/"
 # 		DESTINATION "${MODELS_DIRECTORY}"
 # 		COMPONENT applications #тип файла - настроечный
-# 		)			
+# 		)
 #install(FILES 
 #		manual.doc #путь к файлу
 #		DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/doc"

@@ -2,6 +2,7 @@
 
 layout (set = 0, binding = 0) uniform UBO 
 {
+	uvec4 unique_id;
 	mat4 projection;
 	mat4 modelview;
 	vec4 lightPos;

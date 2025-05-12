@@ -41,6 +41,14 @@
  glslc axis/axis.frag -o comp/axis.frag.spv
  glslc axis/axis.vert -o comp/axis.vert.spv
 
+ @rem line
+ glslc line/line.frag -o comp/line.frag.spv
+ glslc line/line.vert -o comp/line.vert.spv
+ glslc line/line.geom -o comp/line.geom.spv
+ @rem text
+ glslc text/text.vert -o comp/text.vert.spv
+ glslc text/text.frag -o comp/text.frag.spv
+
  @rem compute particle
   glslc computeparticle/particle.frag -o comp/compute_particle.frag.spv
   glslc computeparticle/particle.vert -o comp/compute_particle.vert.spv
