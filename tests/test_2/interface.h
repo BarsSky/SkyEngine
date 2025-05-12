@@ -84,6 +84,7 @@ public:
   /// Определяем публичные слоты для сигналов управления от виджетов QT
   ///
 private:
+  void magickCursor(double x_pos, double y_pos) override;
   //base directories
   const std::string _model_dir = MODELS_DIRECTORY;
   const std::string _shader_dir = SHADER_DIRECTORY;
@@ -136,7 +137,7 @@ private:
   Model *Moon = nullptr;
   Model *Sun = nullptr;
   TextOverlay* text_info= nullptr;
-  GLTF_Model_Animate *modelAnimate = nullptr;
+  GLTF_Model *modelAnimate = nullptr;
   Partical_Model_GPU *gpu_particle = nullptr;
   Partical_Model_GPU *gpu_particle1 = nullptr;
   GLTF_Model * SpaceShip = nullptr;
@@ -162,6 +163,8 @@ private:
   //    std::condition_variable wait_prepare;
   float timer_dog = 0;
   int iter_dog = 1;
+  ///
+  glm::vec2 mouse_point;
 };
 
 //#include "moc_Interface.cpp"

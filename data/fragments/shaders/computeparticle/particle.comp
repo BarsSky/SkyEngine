@@ -11,7 +11,7 @@ struct ParticleGPU
 };
 
 // Binding 0 : Position storage buffer
-layout(binding = 0) buffer Pos
+layout(set = 0,binding = 0) buffer Pos
 {
     ParticleGPU particles[];
 };
@@ -21,8 +21,9 @@ layout(binding = 0) buffer Pos
 
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
-layout (binding = 1) uniform UBO
+layout (set = 0,binding = 1) uniform UBO
 {
+    uvec4 unique_id; 
     float deltaT;
     float destX;
     float destY;
@@ -62,6 +63,9 @@ void main(){
 
     // Read position and velocity
     vec3 vVel = particles[index].vel.xyz;
+//    if(vVel==vec3(0)){
+//        return;
+//    }
     vec3 vPos = particles[index].pos.xyz;
     float living = particles[index].lifeTime;
     float estimatedT = ubo_gpu_particl.estLifetime;
@@ -69,25 +73,30 @@ void main(){
     float gradient = particles[index].gradientPos.x;
 
     vec3 destPos = estimatedT*normalize(vec3(ubo_gpu_particl.destX, ubo_gpu_particl.destY, ubo_gpu_particl.destZ));
+        if(destPos==vec3(0)){
+            particles[index].gradientPos.y = 0;
+            return;
+        }
     vec3 random = particles[index].randomPos;
     vec3 hflfway = random+((estimatedT-random)/2);
     vec3 delta = random + vPos;
-    vec3 deltaTarget = estimatedT-random;
+    vec3 deltaTarget = destPos-random;
     //vec3 delta = random - vPos;
     float targetDistance = sqrt(dot(delta, delta));
     float targetDistanceMinus = sqrt(dot(deltaTarget,deltaTarget));
     vVel += repulsion(vPos, destPos.xyz) * 0.05;
     //vVel = vec3(0.0);
 	//vVel += delta*0.01;
+
     float k = estimatedT/3;
-    if ((targetDistance > estimatedT) || (living == 0.0))
+
+    if ((targetDistance > estimatedT) || (living == 0.0) || (living > 10.0))
     {
-		//if(living>3.2){k*=1.82;}
-		//if(living<3.2){k/=1.82;}
 
-        vPos = random*k*0.3f*normalize(destPos);
 
-        vVel = destPos * (1.0*k-dot(random,random)*0.5)*0.000755*100/estimatedT;
+        vPos = random*k*0.09f;//*normalize(destPos);
+        //vPos = random+normalize(destPos)*estimatedT*0.5;//+(destPos)*0.5;
+        vVel = sqrt(dot(random,random))*1*destPos * (1.0*k-dot(random,random)*0.5)*0.0755/estimatedT;
         living = 0.0;
         alph=1;
         //gradient=0;

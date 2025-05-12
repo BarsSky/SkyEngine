@@ -346,6 +346,12 @@ bool VulkanDevice::checkDeviceExtensionSupport(VkPhysicalDevice device)
 
 void VulkanDevice::getEnabledFeatures()
 {
+    if (supportedFeatures.fragmentStoresAndAtomics)
+        enabledFeatures.fragmentStoresAndAtomics = VK_TRUE;
+
+    if (supportedFeatures.wideLines)
+        enabledFeatures.wideLines = VK_TRUE;
+
     if (supportedFeatures.samplerAnisotropy)
         enabledFeatures.samplerAnisotropy = VK_TRUE;
 

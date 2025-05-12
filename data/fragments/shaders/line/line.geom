@@ -10,7 +10,8 @@ layout(push_constant) uniform PushConsts{
     bool dash;
 } pc;
 
-layout(binding=0) uniform UniformBufferObject{
+layout(set = 1,binding=0) uniform UniformBufferObject{
+    uvec4 unique_id;
     mat4 view;
     mat4 projection;
     vec4 viewPos;
@@ -40,7 +41,7 @@ void main() {
     if (gl_PrimitiveIDIn == gl_in.length() - 1) p3 = p2 + (p2 - p1);
 
     //
-    int lodSegments = pc.segments;
+    int lodSegments = int(pc.segments*0.25);
     if(!pc.dash){
         float dist = distance(0.5 * (p1+p2), ubo.viewPos.xyz);
         lodSegments = clamp(int(pc.segments * 100.0/(dist + 1.0)), 4, 64);
@@ -53,10 +54,43 @@ void main() {
         vec3 next = catmull_rom(p0,p1,p2,p3,t + 0.01);//1.0/lodSegments);
 
         vec3 tangent = normalize(next - curr);
+        mat4 crosser = ubo.projection * ubo.view;
+        vec3 cameraUp = vec3(crosser[0][0], crosser[1][1], crosser[2][2]);
         vec3 normal = normalize(cross(tangent, vec3(0,1,0)));
         vec3 binormal = normalize(cross(tangent, normal));
 
         vec3 offset = normal*pc.line_thiknes;
+
+        for(int j =0; j < 2; ++j){
+            vec3 pos = curr + (j == 0 ? offset : -offset);
+            gl_Position = ubo.projection * ubo.view *vec4(pos, 1.0);
+            outColor = mix(inColor[1],inColor[2],t);
+            uv = vec2(t, j);
+            EmitVertex();
+        }
+
+    }
+    EndPrimitive();
+
+
+    for(int i = 0; i <= lodSegments; ++i){
+        float t = i/float(lodSegments);
+
+        vec3 curr = catmull_rom(p0,p1,p2,p3,t);
+        vec3 next = catmull_rom(p0,p1,p2,p3,t + 0.01);//1.0/lodSegments);
+
+        vec3 tangent = normalize(next - curr);
+        mat4 crosser = ubo.projection * ubo.view;
+        vec3 cameraUp = vec3(crosser[0][0], crosser[1][1], crosser[2][2]);
+        vec3 normal = normalize(cross(tangent, vec3(0,1,0)));
+        vec3 binormal = normalize(cross(tangent, normal));
+
+        vec3 offset = normal*pc.line_thiknes;
+
+        //normal = normalize(cross(tangent, vec3(1,0,0)));
+        //binormal = normalize(cross(normal, vec3(0,1,0)));
+
+        offset = binormal*pc.line_thiknes*1;
 
         for(int j =0; j < 2; ++j){
             vec3 pos = curr + (j == 0 ? offset : -offset);

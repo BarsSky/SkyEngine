@@ -7,6 +7,10 @@ layout (location = 0) out vec4 outFragColor;
 layout(constant_id=0)const bool ALPHA_MASK=false;
 layout(constant_id=1)const float ALPHA_MASK_CUTOFF=0.f;
 
+layout(set = 0, binding = 0) buffer writeonly HitBuffer{
+    uint data[];
+}pickingBuffer;
+
 void main()
 {
     vec4 color = inColor;

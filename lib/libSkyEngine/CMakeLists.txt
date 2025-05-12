@@ -25,6 +25,7 @@ file(GLOB _HEADER_FILES
         ${IMGUI_ROOT}/*.h
         ${IMGUI_ROOT}/misc/cpp/*.h
         ${IMGUI_ROOT}/backends/*.h
+		${KHR_ROOT}/KHR/*.h
 )
 
 set(_PUBLIC_INCLUDE_DIR # директории указанные в этой переменной видны в этой библиотеке,
@@ -36,6 +37,7 @@ set(_PUBLIC_INCLUDE_DIR # директории указанные в этой п
         ${IMGUI_ROOT}/
         ${IMGUI_ROOT}/misc/cpp/
         ${IMGUI_ROOT}/backends/
+		${KHR_ROOT}/KHR/
 )
 
 set(_PRIVATE_INCLUDE_DIR #
@@ -118,7 +120,9 @@ install(
 file(GLOB INSTALL_HEADER_FILES
         ${IMGUI_ROOT}/*.h
         ${IMGUI_ROOT}/misc/cpp/*.h
-        ${IMGUI_ROOT}/backends/*.h)
+        ${IMGUI_ROOT}/backends/*.h
+		${KHR_ROOT}/KHR/*.h
+				)
 install(
         FILES ${INSTALL_HEADER_FILES}
         DESTINATION

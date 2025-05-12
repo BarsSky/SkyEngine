@@ -1,7 +1,7 @@
 #version 450
 
 // layout (input_attachment_index = 0, binding = 1) uniform subpassInput samplerPositionDepth;
-layout (binding = 1) uniform sampler2D samplerTexture;
+layout (set = 2, binding = 1) uniform sampler2D samplerTexture;
 
 layout (location = 0) in vec3 aNormal;
 layout (location = 1) in vec4 inColor;

@@ -424,10 +424,11 @@ void Model::setDescriptorLayout() {
     throw std::runtime_error("failed to create descriptor set layout!");
   }
 
+  vkDescriptorLayouts.emplace_back(descriptorSetLayout);
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipelineLayoutInfo.setLayoutCount = 1;
-  pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+  pipelineLayoutInfo.setLayoutCount = vkDescriptorLayouts.size();
+  pipelineLayoutInfo.pSetLayouts = vkDescriptorLayouts.data();
 
   if (vkCreatePipelineLayout(vDevice->logicalDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
     throw std::runtime_error("failed to create pipeline layout!");
@@ -573,6 +574,9 @@ glm::mat4 Model::getOrintationMat(glm::vec3 vec, glm::vec3 start_orientation) {
   //    rot_ax = glm::vec3(0,0,-1);
   //
   // glm::vec3 rotor = getRotationVector(vec, currentPos, false, rot_ax);
+  if (vec == glm::vec3(0))
+    return glm::mat4(1);
+
   vec = glm::normalize(vec);
   glm::quat ror = glm::rotation(start_orientation, vec);
   glm::mat4 Mrot = glm::mat4_cast(ror); // glm::quat(rotor));
@@ -606,13 +610,11 @@ glm::vec3 Model::getRotationVector(glm::vec3 point_to,
 }
 
 void Model::draw(VkCommandBuffer model_buffer) {
-  if (!is_object_visible)
-    return;
   VkDeviceSize offsets[1] = {0};
 
   vkCmdBindPipeline(model_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-  vkCmdBindDescriptorSets(model_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptor, 0,
+  vkCmdBindDescriptorSets(model_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptor, 0,
                           nullptr);
 
   VkBuffer *vertexBuffers = &getBuffer()->vert;
@@ -641,10 +643,10 @@ void Model::initialization() {
     }
   } else if (!path.empty()) {
     switch (type) {
-      case model_type::FROMOBJ:
+      case model_type::from_obj_file:
         LoadModelFromFile(path);
         break;
-      case model_type::FROMKTX:
+      case model_type::from_ktx_file:
         GenerateModelFromFile(path);
         break;
       default:
@@ -667,8 +669,6 @@ void Model::destroy() {
   }
   ind.buffer.destroy();
   vert.buffer.destroy();
-
-  // vkDestroyPipelineCache(vDevice->logicalDevice, pipelineCache, nullptr);
 }
 
 void Model::createDescriptorSets() {
@@ -704,21 +704,13 @@ void Model::createDescriptorPool() {
   size_t draw_size = 0;
   draw_size += getTexturesSize();
 
-  std::array<VkDescriptorPoolSize, 2> poolSizes{};
-  poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size);
-  poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size * 2);
-
-  VkDescriptorPoolCreateInfo poolInfo{};
-  poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-  poolInfo.pPoolSizes = poolSizes.data();
-  poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size);
-
-  if (vkCreateDescriptorPool(vDevice->logicalDevice, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create descriptor pool!");
-  }
+  vkPoolSizes.emplace_back();
+  vkPoolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  vkPoolSizes.back().descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size);
+  vkPoolSizes.emplace_back();
+  vkPoolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  vkPoolSizes.back().descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size * 2);
+  poolDrawSize = MAX_FRAMES_IN_FLIGHT * draw_size * 2;
 }
 
 void Model::set_vertices(Vertex *vert, size_t size) {
@@ -837,8 +829,8 @@ void Partical_Model_CPU::loadTexture(VkImageViewType type) {
     Texture2DKTX *d_texture = new Texture2DKTX();
     d_texture->loadFromFile(path, VK_FORMAT_R8G8B8A8_UNORM, vDevice, vDevice->queue);
     /**
-         * Change sampler spectial for particles
-         */
+     * Change sampler spectial for particles
+     */
     VkSamplerCreateInfo samplerCreateInfo = initializers::samplerCreateInfo();
     samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
     samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
@@ -940,10 +932,12 @@ void Partical_Model_CPU::setDescriptorLayout() {
     throw std::runtime_error("failed to create descriptor set layout!");
   }
 
+  vkDescriptorLayouts.emplace_back(descriptorSetLayout);
+
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipelineLayoutInfo.setLayoutCount = 1;
-  pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+  pipelineLayoutInfo.setLayoutCount = vkDescriptorLayouts.size();
+  pipelineLayoutInfo.pSetLayouts = vkDescriptorLayouts.data();
 
   if (vkCreatePipelineLayout(vDevice->logicalDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
     throw std::runtime_error("failed to create pipeline layout!");
@@ -1081,11 +1075,9 @@ void Partical_Model_CPU::createFramebuffers(VulkanSwapChain *vkSwapChain) {
 }
 
 void Partical_Model_CPU::draw(VkCommandBuffer _buffer) {
-  if (!is_object_visible)
-    return;
   vkCmdBindPipeline(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptor, 0, nullptr);
+  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptor, 0, nullptr);
 
   VkDeviceSize offsets[1] = {0};
   VkBuffer *vertexBuffers = &getBuffer()->vert;
@@ -1095,6 +1087,36 @@ void Partical_Model_CPU::draw(VkCommandBuffer _buffer) {
   // vkCmdDrawIndexed(_buffer, static_cast<uint32_t>(getIndices().size()), 1, 0, 0, 0);
 
   vkCmdDraw(_buffer, particle_count, 1, 0, 0);
+}
+
+void Partical_Model_CPU::set_count(unsigned int _count) {
+  particle_count = _count;
+}
+
+void Partical_Model_CPU::set_radius(float _radius) {
+  radius = _radius;
+}
+
+void Partical_Model_CPU::set_position(glm::vec3 position) {
+  emitterPos = position;
+}
+
+void Partical_Model_CPU::set_direction(glm::vec3 direction) {
+  //err guard
+  if (direction == glm::vec3(0, 0, 0))
+    return;
+
+  direction = glm::normalize(direction);
+  if (lastDirection == direction) //if nothing changed
+    return;
+
+  minVel = minVel_base * direction;
+  maxVel = maxVel_base * direction;
+  lastDirection = direction;
+}
+
+void Partical_Model_CPU::set_alpha(float value) {
+  alpha = value;
 }
 
 Partical_Model_CPU::Partical_Model_CPU() : Object() {
@@ -1111,7 +1133,6 @@ void Partical_Model_CPU::destroy() {
   vkUnmapMemory(vDevice->logicalDevice, particles.memory);
   vkDestroyBuffer(vDevice->logicalDevice, particles.buffer, nullptr);
   vkFreeMemory(vDevice->logicalDevice, particles.memory, nullptr);
-  // vkDestroyPipelineCache(vDevice->logicalDevice, pipelineCache, nullptr);
 }
 
 void Partical_Model_CPU::createDescriptorSets() {
@@ -1147,21 +1168,13 @@ void Partical_Model_CPU::createDescriptorPool() {
   size_t draw_size = 0;
   draw_size += getTexturesSize();
 
-  std::array<VkDescriptorPoolSize, 2> poolSizes{};
-  poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size);
-  poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size * 2);
-
-  VkDescriptorPoolCreateInfo poolInfo{};
-  poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-  poolInfo.pPoolSizes = poolSizes.data();
-  poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size);
-
-  if (vkCreateDescriptorPool(vDevice->logicalDevice, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create descriptor pool!");
-  }
+  vkPoolSizes.emplace_back();
+  vkPoolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  vkPoolSizes.back().descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size);
+  vkPoolSizes.emplace_back();
+  vkPoolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  vkPoolSizes.back().descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size * 2);
+  poolDrawSize += MAX_FRAMES_IN_FLIGHT * draw_size;
 }
 
 VkDeviceSize Partical_Model_CPU::getBufferSize() {
@@ -1185,27 +1198,47 @@ std::vector<uint32_t> *Partical_Model_CPU::getIndices() {
 
 void Partical_Model_CPU::preparePipeline() {
   pipeline_parameters _parameters;
-  VkPipelineColorBlendAttachmentState colorBlendAttachment = initializers::pipelineColorBlendAttachmentState(0xf,
-    VK_FALSE);
-  VkPipelineDepthStencilStateCreateInfo depthStencil = initializers::pipelineDepthStencilStateCreateInfo(VK_TRUE,
-    VK_TRUE,
-    VK_COMPARE_OP_LESS_OR_EQUAL);
-  VkPipelineInputAssemblyStateCreateInfo inputAssembly = initializers::pipelineInputAssemblyStateCreateInfo(
-    VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0, VK_FALSE);
-  VkPipelineRasterizationStateCreateInfo rasterizer = initializers::pipelineRasterizationStateCreateInfo(
-    VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0); ///*_COUNTER*/
-  VkPipelineColorBlendStateCreateInfo colorBlending = initializers::pipelineColorBlendStateCreateInfo(1,
-    &colorBlendAttachment);
+  VkPipelineColorBlendAttachmentState colorBlendAttachment =
+      initializers::pipelineColorBlendAttachmentState(
+        0xf,
+        VK_FALSE);
+  VkPipelineDepthStencilStateCreateInfo depthStencil =
+      initializers::pipelineDepthStencilStateCreateInfo(
+        VK_TRUE,
+        VK_TRUE,
+        VK_COMPARE_OP_LESS_OR_EQUAL);
+  VkPipelineInputAssemblyStateCreateInfo inputAssembly =
+      initializers::pipelineInputAssemblyStateCreateInfo(
+        VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+        0,
+        VK_FALSE);
+  VkPipelineRasterizationStateCreateInfo rasterizer =
+      initializers::pipelineRasterizationStateCreateInfo(
+        VK_POLYGON_MODE_FILL,
+        VK_CULL_MODE_BACK_BIT,
+        VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        0); ///*_COUNTER*/
+  VkPipelineColorBlendStateCreateInfo colorBlending =
+      initializers::pipelineColorBlendStateCreateInfo(
+        1,
+        &colorBlendAttachment);
   VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
   vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
   // fixme: changed for viewport
-  VkPipelineViewportStateCreateInfo viewportState = initializers::pipelineViewportStateCreateInfo(1, 1, 0);
-  std::vector<VkDynamicState> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-  VkPipelineDynamicStateCreateInfo dynamicState = initializers::pipelineDynamicStateCreateInfo(
-    dynamicStateEnables);
-  VkPipelineMultisampleStateCreateInfo multisampling = initializers::pipelineMultisampleStateCreateInfo(
-    vDevice->msaaSamples, 0); // VK_SAMPLE_COUNT_1_BIT vDevice->msaaSamples
+  VkPipelineViewportStateCreateInfo viewportState =
+      initializers::pipelineViewportStateCreateInfo(
+        1,
+        1,
+        0);
+  std::vector<VkDynamicState> dynamicStateEnables =
+      {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+  VkPipelineDynamicStateCreateInfo dynamicState =
+      initializers::pipelineDynamicStateCreateInfo(
+        dynamicStateEnables);
+  VkPipelineMultisampleStateCreateInfo multisampling =
+      initializers::pipelineMultisampleStateCreateInfo(
+        vDevice->msaaSamples, 0); //
 
   _parameters.dynamicState = &dynamicState;
   _parameters.colorBlendAttachment = &colorBlendAttachment;
@@ -1375,8 +1408,8 @@ void Partical_Model_GPU::loadTexture(VkImageViewType type) {
     Texture2DKTX *d_texture = new Texture2DKTX();
     d_texture->loadFromFile(path, VK_FORMAT_R8G8B8A8_UNORM, vDevice, vDevice->queue);
     /**
-         * Change sampler spectial for particles
-         */
+     * Change sampler spectial for particles
+     */
     VkSamplerCreateInfo samplerCreateInfo = initializers::samplerCreateInfo();
     samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
     samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
@@ -1436,12 +1469,12 @@ void Partical_Model_GPU::createDescriptorSets() {
   vkUpdateDescriptorSets(vDevice->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()),
                          writeDescriptorSets.data(), 0, NULL);
   /**
-     *  New BLOCK OFF SEMAPHORE
-     */
+   *  New BLOCK OFF SEMAPHORE
+   */
   createSemaphore();
   /**
-     *  ADD Aditinal compute command buffer build
-     */
+   *  ADD Aditinal compute command buffer build
+   */
 }
 
 void Partical_Model_GPU::prepareParticles() {
@@ -1457,8 +1490,8 @@ void Partical_Model_GPU::prepareParticles() {
     particle.gradientPos.y = 1;
     particle.gradientPos.z = 2;
     particle.lifeTime = 0.f;
-    particle.estLifetime = 10.0f;
-    particle.randomPos = particle.pos;
+    particle.estLifetime = 3.0f;
+    particle.randomPos = particle.pos; //glm::vec3(rndDist(_rndEngine), rndDist(_rndEngine), rndDist(_rndEngine));
   }
 
   VkDeviceSize storageBufferSize = particleBuffer.size() * sizeof(ParticleGPU);
@@ -1588,10 +1621,12 @@ void Partical_Model_GPU::setDescriptorLayout() {
   VK_CHECK_RESULT(
     vkCreateDescriptorSetLayout(vDevice->logicalDevice, &descriptorLayout, nullptr, &descriptorSetLayout));
 
+  vkDescriptorLayouts.emplace_back(descriptorSetLayout);
+
   VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
       initializers::pipelineLayoutCreateInfo(
-        &descriptorSetLayout,
-        1);
+        vkDescriptorLayouts.data(),
+        vkDescriptorLayouts.size());
 
   VK_CHECK_RESULT(
     vkCreatePipelineLayout(vDevice->logicalDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
@@ -1601,23 +1636,17 @@ void Partical_Model_GPU::createDescriptorPool() {
   size_t draw_size = 0;
   draw_size += getTexturesSize();
 
-  std::array<VkDescriptorPoolSize, 3> poolSizes{};
-  poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  poolSizes[0].descriptorCount = static_cast<uint32_t>(2);
-  poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  poolSizes[1].descriptorCount = static_cast<uint32_t>(1);;
-  poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  poolSizes[2].descriptorCount = static_cast<uint32_t>(2);
+  vkPoolSizes.emplace_back();
+  vkPoolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  vkPoolSizes.back().descriptorCount = static_cast<uint32_t>(2);
+  vkPoolSizes.emplace_back();
+  vkPoolSizes.back().type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  vkPoolSizes.back().descriptorCount = static_cast<uint32_t>(1);
+  vkPoolSizes.emplace_back();
+  vkPoolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  vkPoolSizes.back().descriptorCount = static_cast<uint32_t>(2);
 
-  VkDescriptorPoolCreateInfo poolInfo{};
-  poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-  poolInfo.pPoolSizes = poolSizes.data();
-  poolInfo.maxSets = static_cast<uint32_t>(2);
-
-  if (vkCreateDescriptorPool(vDevice->logicalDevice, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create descriptor pool!");
-  }
+  poolDrawSize += 2;
 }
 
 void Partical_Model_GPU::updateMapped() {
@@ -1626,7 +1655,7 @@ void Partical_Model_GPU::updateMapped() {
 }
 
 void Partical_Model_GPU::preparePipeline() {
-//maybe make unique
+  //maybe make unique
   prepareParticles();
   prepareUniformBuffers();
   ///
@@ -1724,7 +1753,7 @@ void Partical_Model_GPU::preparePipeline() {
     &pipeline));
 }
 
-void Partical_Model_GPU::prepareCompute() const {
+void Partical_Model_GPU::prepareCompute() {
   // Create a compute capable vDevice->logicalDevice queue
   // The VulkanDevice::createLogicalDevice functions finds a compute capable queue and prefers queue families that only support compute
   // Depending on the implementation this may result in different queue family indices for graphics and computes,
@@ -1755,6 +1784,8 @@ void Partical_Model_GPU::prepareCompute() const {
   VK_CHECK_RESULT(
     vkCreateDescriptorSetLayout(vDevice->logicalDevice, &descriptorLayout, nullptr,
       &u_ptr_compute->descriptorSetLayout));
+
+  // vkDescriptorLayouts.emplace_back(u_ptr_compute->descriptorSetLayout);
 
   VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo =
       initializers::pipelineLayoutCreateInfo(
@@ -1816,79 +1847,24 @@ void Partical_Model_GPU::prepareCompute() const {
 
   // Semaphore for compute & graphics sync
   VkSemaphoreCreateInfo semaphoreCreateInfo = initializers::semaphoreCreateInfo();
+
   VK_CHECK_RESULT(
     vkCreateSemaphore(vDevice->logicalDevice, &semaphoreCreateInfo, nullptr, &u_ptr_compute->compute));
 
   // Build a single command buffer containing the compute dispatch commands
   buildComputeCommandBuffer();
-
-  // SRS - By reordering compute and graphics within draw(), the following code is no longer needed:
-  // If graphics and compute queue family indices differ, acquire and immediately release the storage buffer, so that the initial acquire from the graphics command buffers are matched up properly
-  /*
-    if (graphics.queueFamilyIndex != u_ptr_compute->queueFamilyIndex)
-    {
-        // Create a transient command buffer for setting up the initial buffer transfer state
-        VkCommandBuffer transferCmd = vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, u_ptr_compute->commandPool, true);
-
-        VkBufferMemoryBarrier acquire_buffer_barrier =
-        {
-            VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-            nullptr,
-            0,
-            VK_ACCESS_SHADER_WRITE_BIT,
-            graphics.queueFamilyIndex,
-            u_ptr_compute->queueFamilyIndex,
-            u_ptr_compute->storageBuffer.buffer,
-            0,
-            u_ptr_compute->storageBuffer.size
-        };
-        vkCmdPipelineBarrier(
-            transferCmd,
-            VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-            0,
-            0, nullptr,
-            1, &acquire_buffer_barrier,
-            0, nullptr);
-
-        VkBufferMemoryBarrier release_buffer_barrier =
-        {
-            VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-            nullptr,
-            VK_ACCESS_SHADER_WRITE_BIT,
-            0,
-            u_ptr_compute->queueFamilyIndex,
-            graphics.queueFamilyIndex,
-            u_ptr_compute->storageBuffer.buffer,
-            0,
-            u_ptr_compute->storageBuffer.size
-        };
-        vkCmdPipelineBarrier(
-            transferCmd,
-            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-            VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-            0,
-            0, nullptr,
-            1, &release_buffer_barrier,
-            0, nullptr);
-
-        vulkanDevice->flushCommandBuffer(transferCmd, u_ptr_compute->queue, u_ptr_compute->commandPool);
-    }
-    */
 }
 
 void Partical_Model_GPU::draw(VkCommandBuffer _buffer) {
-  if (!is_object_visible)
-    return;
   vkCmdBindPipeline(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptor, 0, NULL);
+  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptor, 0, NULL);
 
   VkDeviceSize offsets[1] = {0};
   vkCmdBindVertexBuffers(_buffer, 0, 1, &u_ptr_compute->storageBuffer.buffer, offsets);
   vkCmdDraw(_buffer, PARTICLE_COUNT, 1, 0, 0);
 }
 
-void Partical_Model_GPU::buildComputeCommandBuffer() const {
+void Partical_Model_GPU::buildComputeCommandBuffer() {
   VkCommandBufferBeginInfo cmdBufInfo = initializers::commandBufferBeginInfo();
 
   VK_CHECK_RESULT(vkBeginCommandBuffer(u_ptr_compute->commandBuffer, &cmdBufInfo));
@@ -2075,11 +2051,10 @@ VkDescriptorImageInfo *Partical_Model_GPU::get_descriptor_image(size_t tex_idx) 
 }
 
 void Partical_Model_GPU::destroy() {
-  for (const auto &tex: textures) {
+  for (auto &tex: textures) {
     tex->destroy();
   }
   additionalDestroy();
-  // vkDestroyPipelineCache(vDevice->logicalDevice, pipelineCache, nullptr);
 }
 
 void Partical_Model_GPU::additionalDestroy() {
@@ -2091,11 +2066,35 @@ void Partical_Model_GPU::clearComputeBlock() {
   vkDestroySemaphore(vDevice->logicalDevice, u_ptr_compute->graphic, nullptr);
 }
 
-Partical_Model_GPU::Partical_Model_GPU() {
+Partical_Model_GPU::Partical_Model_GPU(): Object() {
   render_flags = ObjectRenderFlags::CMPTOBJECT;
+}
+
+void Partical_Model_GPU::set_count(unsigned int _count) {
+  particle_count = _count;
+}
+
+void Partical_Model_GPU::set_radius(float _radius) {
+  radius = _radius;
+}
+
+void Partical_Model_GPU::set_position(glm::vec3 position) {
+  this->ubo_pos_particle.emiter_position = position;
+}
+
+void Partical_Model_GPU::set_direction(glm::vec3 direction) {
+  //err guard
+  //direction *= 10;
+  this->ubo_gpu_particl.destX = direction.x;
+  this->ubo_gpu_particl.destY = direction.y;
+  this->ubo_gpu_particl.destZ = direction.z;
+}
+
+void Partical_Model_GPU::set_alpha(float value) {
+  alpha = value;
 };
 
-void Terrian_Model::loadTexture(VkImageViewType type) {
+void Terrain_Model::loadTexture(VkImageViewType type) {
   for (auto path: textures_paths) {
     auto array = tools::split(path, std::string("."));
 
@@ -2156,12 +2155,12 @@ void Terrian_Model::loadTexture(VkImageViewType type) {
   }
 }
 
-Terrian_Model::Terrian_Model(std::string _path, model_type _type)
+Terrain_Model::Terrain_Model(std::string _path, model_type _type)
   : Model(std::move(_path),
           _type) {
 }
 
-void Terrian_Model::preparePipeline() {
+void Terrain_Model::preparePipeline() {
   pipeline_parameters _parameters;
   VkPipelineColorBlendAttachmentState colorBlendAttachment = initializers::pipelineColorBlendAttachmentState(0xf,
     VK_FALSE);
@@ -2221,7 +2220,7 @@ void Terrian_Model::preparePipeline() {
   }
 }
 
-void Terrian_Model::setObjectInfo(pipeline_parameters *_parameters, VkGraphicsPipelineCreateInfo *pipelineInfo) {
+void Terrain_Model::setObjectInfo(pipeline_parameters *_parameters, VkGraphicsPipelineCreateInfo *pipelineInfo) {
   vertex.vertexInputBindingDescription = vertex.inputBindingDescription(0);
 
   vertex.vertexInputAttributeDescriptions.resize(3);
@@ -2256,11 +2255,11 @@ void Terrian_Model::setObjectInfo(pipeline_parameters *_parameters, VkGraphicsPi
   _parameters->rasterizer->polygonMode = VK_POLYGON_MODE_FILL;
 }
 
-VkDeviceSize Terrian_Model::getBufferSize() {
+VkDeviceSize Terrain_Model::getBufferSize() {
   return VkDeviceSize(sizeof(UniformBufferTessellation));
 }
 
-void Terrian_Model::setDescriptorLayout() {
+void Terrain_Model::setDescriptorLayout() {
   // For tesselation
   VkDescriptorSetLayoutBinding tesselationLayoutBinding{};
   tesselationLayoutBinding.binding = 0;
@@ -2310,9 +2309,10 @@ void Terrian_Model::setDescriptorLayout() {
   }
 }
 
-void Terrian_Model::draw(VkCommandBuffer _buffer) {
+void Terrain_Model::draw(VkCommandBuffer _buffer) {
   if (!is_object_visible)
     return;
+
   VkDeviceSize offsets[1] = {0};
 
   vkCmdSetLineWidth(_buffer, 1.0f);
@@ -2337,14 +2337,13 @@ void Terrian_Model::draw(VkCommandBuffer _buffer) {
   }
 }
 
-void Terrian_Model::updateMapped() {
+void Terrain_Model::updateMapped() {
   memcpy(uniformObjectBuffer.mapped, &tesselation_ubo, sizeof(tesselation_ubo));
 }
 
-void Terrian_Model::createAdditinalBuffer() {
+void Terrain_Model::createAdditinalBuffer() {
   Model::createAdditinalBuffer();
 }
-
 
 void GLTF_SkyBox::loadTexture(VkImageViewType type) {
   for (const auto &path: textures_paths) {
@@ -2402,11 +2401,14 @@ void GLTF_SkyBox::setDescriptorLayout() {
     throw std::runtime_error("failed to create descriptor set layout!");
   }
 
+
+  vkDescriptorLayouts.emplace_back(descriptorSetLayout);
+
   std::vector<VkPipelineLayoutCreateInfo> pipelineLayoutInfo{};
   pipelineLayoutInfo.resize(1);
   pipelineLayoutInfo.at(0).sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipelineLayoutInfo.at(0).setLayoutCount = 1;
-  pipelineLayoutInfo.at(0).pSetLayouts = &descriptorSetLayout;
+  pipelineLayoutInfo.at(0).setLayoutCount = vkDescriptorLayouts.size();
+  pipelineLayoutInfo.at(0).pSetLayouts = vkDescriptorLayouts.data(); //&descriptorSetLayout;
 
   // pipelineLayoutInfo.at(1).sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   // pipelineLayoutInfo.at(1).setLayoutCount = 1;
@@ -2461,16 +2463,12 @@ VkDeviceSize GLTF_SkyBox::getBufferSize() {
 }
 
 void GLTF_SkyBox::draw(VkCommandBuffer _buffer) {
-  if (!is_object_visible)
-    return;
-
-  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptor, 0,
+  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptor, 0,
                           nullptr);
 
   vkCmdBindPipeline(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
   u_ptr_model->draw(_buffer);
-
 }
 
 void GLTF_SkyBox::createFramebuffers(VulkanSwapChain *vkSwapChain) {
@@ -2740,21 +2738,14 @@ void GLTF_SkyBox::createDescriptorSets() {
 }
 
 void GLTF_SkyBox::createDescriptorPool() {
-  std::array<VkDescriptorPoolSize, 2> poolSizes{};
-  poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  poolSizes[0].descriptorCount = 1;
-  poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  poolSizes[1].descriptorCount = static_cast<uint32_t>(textures.size());
+  vkPoolSizes.emplace_back();
+  vkPoolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  vkPoolSizes.back().descriptorCount = 1;
+  vkPoolSizes.emplace_back();
+  vkPoolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  vkPoolSizes.back().descriptorCount = static_cast<uint32_t>(textures.size());
 
-  VkDescriptorPoolCreateInfo poolInfo{};
-  poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-  poolInfo.pPoolSizes = poolSizes.data();
-  poolInfo.maxSets = static_cast<uint32_t>(textures.size() + 1);
-
-  if (vkCreateDescriptorPool(vDevice->logicalDevice, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create descriptor pool!");
-  }
+  poolDrawSize += 1 + textures.size();
 }
 
 void GLTF_SkyBox::preparePipeline() {
@@ -2923,6 +2914,7 @@ void GLTF_SkyBox::updateMapped() {
 void GLTF_SkyBox::createAdditinalBuffer() {
   GLTF_Model::createAdditinalBuffer();
 }
+
 ///////////////////////////////////////// GLTF MODEl ANIMATE //////////////////////////////////////////////////////////
 void GLTF_Model_Animate::createDescriptorSets() {
   // Descriptor set for scene matrices
@@ -3028,7 +3020,7 @@ void GLTF_Model_Animate::preparePipeline() {
 }
 
 void GLTF_Model_Animate::createDescriptorPool() {
-  std::vector<VkDescriptorPoolSize> poolSizes{
+  vkPoolSizes = {
     initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
     initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                                      static_cast<uint32_t>(u_ptr_model->getGLTFModel()->images.size())),
@@ -3040,8 +3032,7 @@ void GLTF_Model_Animate::createDescriptorPool() {
       static_cast<uint32_t>(u_ptr_model->getGLTFModel()->images.size()) +
       static_cast<uint32_t>(u_ptr_model->getGLTFModel()->skins.size()) + 1;
 
-  VkDescriptorPoolCreateInfo descriptorPoolInfo = initializers::descriptorPoolCreateInfo(poolSizes, maxSetCount);
-  VK_CHECK_RESULT(vkCreateDescriptorPool(vDevice->logicalDevice, &descriptorPoolInfo, nullptr, &descriptorPool));
+  poolDrawSize += maxSetCount;
 }
 
 void GLTF_Model_Animate::setDescriptorLayout() {
@@ -3064,13 +3055,12 @@ void GLTF_Model_Animate::setDescriptorLayout() {
   VK_CHECK_RESULT(vkCreateDescriptorSetLayout(vDevice->logicalDevice, &descriptorSetLayoutCI, nullptr,
     &descriptorSetLayouts.jointMatrices));
 
-  std::vector<VkDescriptorSetLayout> setLayouts = {
-    descriptorSetLayouts.matrices,
-    descriptorSetLayouts.textures,
-    descriptorSetLayouts.jointMatrices,
-  };
-  VkPipelineLayoutCreateInfo pipelineLayoutCI = initializers::pipelineLayoutCreateInfo(setLayouts.data(),
-    static_cast<uint32_t>(setLayouts.size()));
+  vkDescriptorLayouts.emplace_back(descriptorSetLayouts.matrices);
+  vkDescriptorLayouts.emplace_back(descriptorSetLayouts.jointMatrices);
+  vkDescriptorLayouts.emplace_back(descriptorSetLayouts.textures);
+
+  VkPipelineLayoutCreateInfo pipelineLayoutCI = initializers::pipelineLayoutCreateInfo(vkDescriptorLayouts.data(),
+    static_cast<uint32_t>(vkDescriptorLayouts.size()));
 
   // We will use push constants to push the local matrices of a primitive to the vertex shader
   VkPushConstantRange pushConstantRange = initializers::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT,
@@ -3123,8 +3113,6 @@ void GLTF_Model_Animate::createRenderPass(VkFormat format) {
 }
 
 void GLTF_Model_Animate::draw(VkCommandBuffer _buffer) {
-  if (!is_object_visible)
-    return;
   // All vertices and indices are stored in single buffers, so we only need to bind once
   vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptor, 0, nullptr);
   vkCmdBindPipeline(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
@@ -3142,17 +3130,13 @@ void GLTF_Model_Animate::initialization() {
 }
 
 void GLTF_Model_Animate::destroy() {
-  for (auto &tex: textures) {
-    tex->destroy();
-  }
-  u_ptr_model->destroy();
   vkDestroyDescriptorSetLayout(vDevice->logicalDevice, descriptorSetLayouts.matrices, nullptr);
   vkDestroyDescriptorSetLayout(vDevice->logicalDevice, descriptorSetLayouts.textures, nullptr);
   vkDestroyDescriptorSetLayout(vDevice->logicalDevice, descriptorSetLayouts.jointMatrices, nullptr);
-  // vkDestroyPipelineCache(vDevice->logicalDevice, pipelineCache, nullptr);
+  u_ptr_model->destroy();
 }
 
-void GLTF_Model_Animate::update(const float frame_time) {
+void GLTF_Model_Animate::update(float frame_time) {
   u_ptr_model->getGLTFModel()->updateAnimation(frame_time);
 }
 
@@ -3197,6 +3181,7 @@ GLTF_Model_Animate::~GLTF_Model_Animate() {
 
 void GLTF_Model_Animate::createAdditinalBuffer() {
 }
+
 void GLTF_Model::createUniformBuffer() {
 }
 
@@ -3244,6 +3229,11 @@ uint32_t GLTF_Model::getSkinSize() const {
 }
 
 void GLTF_Model::preparePipeline() {
+  // For compute work make universal
+  prepareInputs();
+  // prepareUniformBuffers();
+
+
   pipeline_parameters _parameters;
   VkPipelineColorBlendAttachmentState colorBlendAttachment = initializers::pipelineColorBlendAttachmentState(0xf,
     VK_FALSE);
@@ -3294,11 +3284,13 @@ void GLTF_Model::preparePipeline() {
   pipelineInfo.layout = pipelineLayout;
 
   // setObjectInfo(&_parameters, &pipelineInfo);
-
+  // std::vector<VkPipelineShaderStageCreateInfo> _shadersStages = {shadersStages[0], shadersStages[1]};
   pipelineInfo.pStages = shadersStages.data();
   pipelineInfo.stageCount = shadersStages.size();
   // For double sided materials, culling will be disabled
-  // rasterizationStateCI.cullMode = material.doubleSided ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
+  // rasterizationStateCI.cullMode = material.doubleSided ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT
+
+
   auto mt_size = u_ptr_model->get_material_size();
   for (size_t ct = 0; ct < mt_size; ++ct) {
     struct MaterialSpecializationData {
@@ -3382,90 +3374,19 @@ void GLTF_Model::prepare() {
 }
 
 void GLTF_Model::createDescriptorSets() {
-  // VkDescriptorSetAllocateInfo allocInfo{};
-  // allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  // allocInfo.descriptorPool = u_ptr_model->get_pool_descriptor(); // scene->
-  // allocInfo.descriptorSetCount = 1;
-  // allocInfo.pSetLayouts = &descriptorSetLayout;
-  // if (vkAllocateDescriptorSets(vDevice->logicalDevice, &allocInfo, &descriptor) != VK_SUCCESS) {
-  //   throw std::runtime_error("failed to allocate descriptor sets!");
-  // }
-  //
-  // std::vector<VkWriteDescriptorSet> descriptorWritesBuffer;
-  //
-  //
-  // descriptorWritesBuffer.emplace_back(initializers::createVkWriteDescriptorBuffer(0,
-  //   &uniformObjectBuffer.descriptor,
-  //   descriptor));
-  //
-  // vkUpdateDescriptorSets(vDevice->logicalDevice, static_cast<uint32_t>(descriptorWritesBuffer.size()),
-  //                        descriptorWritesBuffer.data(), 0, nullptr);
-  // size_t obj_size = 0;
-  //
-  // if (u_ptr_model->get_material_size() > 0) {
-  //   std::vector<VkWriteDescriptorSet> descriptorWritesTextures;
-  //   obj_size = u_ptr_model->get_binding_count();
-  //   auto tex_size = u_ptr_model->get_material_size();
-  //   for (size_t j = 0; j < tex_size; ++j) {
-  //     const VkDescriptorSetAllocateInfo allocInfoTextures = initializers::descriptorSetAllocateInfo(
-  //       descriptorPool,
-  //       &vkglTF::descriptorSetLayoutImage,
-  //       1);
-  //
-  //     VK_CHECK_RESULT(
-  //       vkAllocateDescriptorSets(
-  //         vDevice->logicalDevice,
-  //         &allocInfoTextures,
-  //         u_ptr_model->get_material_desc_ptr(j)));
-  //
-  //     descriptorWritesTextures.clear();
-  //
-  //     if (u_ptr_model->check_baseColor_texture(j))
-  //       descriptorWritesTextures.emplace_back(initializers::createVkWriteDescriptorTexture(0,
-  //         u_ptr_model->get_colorMap_descriptor(j),
-  //         u_ptr_model->get_material_descriptor(j)
-  //       ));
-  //
-  //     if (u_ptr_model->check_normal_texture(j))
-  //       descriptorWritesTextures.emplace_back(initializers::createVkWriteDescriptorTexture(1,
-  //         u_ptr_model->get_normalMap_descriptor(j),
-  //         u_ptr_model->get_material_descriptor(j)
-  //       ));
-  //
-  //     if (!descriptorWritesTextures.empty())
-  //       vkUpdateDescriptorSets(vDevice->logicalDevice, static_cast<uint32_t>(descriptorWritesTextures.size()),
-  //                              descriptorWritesTextures.data(), 0, nullptr);
-  //   }
-  // }
 }
 
 void GLTF_Model::createDescriptorPool() {
-  // Make increase pool in scene
-
-  /*std::array<VkDescriptorPoolSize, 2> poolSizes{};
-  poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  poolSizes[0].descriptorCount = 1;
-  poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  poolSizes[1].descriptorCount = static_cast<uint32_t>(
-    u_ptr_model->get_binding_count() * (u_ptr_model->get_material_size()));
-
-  VkDescriptorPoolCreateInfo poolInfo{};
-  poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-  poolInfo.pPoolSizes = poolSizes.data();
-  poolInfo.maxSets = static_cast<uint32_t>(u_ptr_model->get_textures_size() + 1);
-
-  if (vkCreateDescriptorPool(vDevice->logicalDevice, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create descriptor pool!");
-  }*/
 }
 
 void GLTF_Model::draw(VkCommandBuffer _buffer) {
-  if (!is_object_visible)
-    return;
+  if (mouse_position != nullptr)
+    manage_constant.mousePos = *mouse_position;
 
+  /// set push constant for mouse value and unique selected id
+  vkCmdPushConstants(_buffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT,
+                     0, sizeof(managePushConstant), &manage_constant);
   u_ptr_model->draw(_buffer, vkglTF::RenderFlags::BindImages, pipelineLayout);
-
 }
 
 void GLTF_Model::loadTexture(VkImageViewType type) {
@@ -3477,38 +3398,19 @@ void GLTF_Model::loadTexture(VkImageViewType type) {
 }
 
 void GLTF_Model::setDescriptorLayout() {
-  // size_t draw_size = 0;
-  // draw_size = u_ptr_model->get_binding_count();
-  std::vector<VkDescriptorSetLayout> layouts; // = {
-  // std::vector<VkDescriptorSetLayoutBinding> bindings{};
-  // //
-  // VkDescriptorSetLayoutBinding uboLayoutBinding{};
-  // uboLayoutBinding.binding = 1;
-  // uboLayoutBinding.descriptorCount = 1;
-  // uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  // uboLayoutBinding.pImmutableSamplers = nullptr;
-  // uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-  // bindings.emplace_back(uboLayoutBinding);
-  //
-  // VkDescriptorSetLayoutCreateInfo layoutInfo{};
-  // layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  // layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-  // layoutInfo.pBindings = bindings.data();
-  //
-  // if (vkCreateDescriptorSetLayout(vDevice->logicalDevice, &layoutInfo, nullptr, &descriptorSetLayout) !=
-  //     VK_SUCCESS) {
-  //   throw std::runtime_error("failed to create descriptor set layout!");
-  // }
-  // //
-  // layouts.emplace_back(descriptorSetLayout);
-
-  layouts.emplace_back(vkglTF::descriptorSetLayoutUbo);
-  layouts.emplace_back(vkglTF::descriptorSetLayoutImage);
+  vkDescriptorLayouts.emplace_back(vkglTF::descriptorSetLayoutUbo);
+  vkDescriptorLayouts.emplace_back(vkglTF::descriptorSetLayoutImage);
 
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
-  pipelineLayoutInfo.pSetLayouts = layouts.data();
+  pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(vkDescriptorLayouts.size());
+  pipelineLayoutInfo.pSetLayouts = vkDescriptorLayouts.data();
+  //
+  VkPushConstantRange pushConstantRange = initializers::pushConstantRange(
+    VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(managePushConstant), 0);
+  // Push constant ranges are part of the pipeline layout
+  pipelineLayoutInfo.pushConstantRangeCount = 1;
+  pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
   if (vkCreatePipelineLayout(vDevice->logicalDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
       VK_SUCCESS) {
@@ -3560,10 +3462,339 @@ void GLTF_Model::updateUBO(UniformBufferObject *data, size_t mesh_id) {
 }
 
 void GLTF_Model::createAdditinalBuffer() {
+  // prepareCompute();
+}
+
+void GLTF_Model::releaseBarrier(VkCommandBuffer _buffer) {
+  // if (vDevice->queueFamilyIndices.graphics != u_ptr_compute->queueFamilyIndex) {
+  //   VkBufferMemoryBarrier buffer_barrier =
+  //   {
+  //     VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+  //     nullptr,
+  //     VK_ACCESS_SHADER_WRITE_BIT,
+  //     VK_ACCESS_SHADER_READ_BIT,
+  //     vDevice->queueFamilyIndices.graphics,
+  //     u_ptr_compute->queueFamilyIndex,
+  //     u_ptr_compute->storageBuffer.buffer,
+  //     0,
+  //     u_ptr_compute->storageBuffer.size
+  //   };
+  //
+  //   vkCmdPipelineBarrier(
+  //     _buffer,
+  //     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+  //     VK_PIPELINE_STAGE_TRANSFER_BIT,
+  //     0,
+  //     0, nullptr,
+  //     1, &buffer_barrier,
+  //     0, nullptr);
+  // }
+  //
+  // VkBufferCopy copy = {0, 0, u_ptr_model->get_vertex_size() * sizeof(vert_ubo_vertices_share)};
+  // vkCmdCopyBuffer(_buffer, u_ptr_compute->hitBuffer.buffer, u_ptr_compute->storageBuffer.buffer, 1, &copy);
+}
+
+void GLTF_Model::readShaderData() {
+  void *data;
+  vkMapMemory(vDevice->logicalDevice, pickObjectBuffer.memory, 0, sizeof(uint32_t) * DEPTH_ARRAY_SCALE, 0,
+              (void **) &data);
+  auto *pickingData = static_cast<uint32_t *>(data);
+
+  for (uint32_t i = 0; i < DEPTH_ARRAY_SCALE; ++i) {
+    if (pickingData[i] != 0) {
+      selectedId = pickingData[i];
+      break;
+    }
+  }
+  //TODO: FOR DEBUG
+  // if (selectedId != 0) {
+  //   std::cout << "Выбран объект с ID: " << selectedId << std::endl;
+  // } else {
+  //   std::cout << "Объект не выбран" << std::endl;
+  // }
+
+  manage_constant.selected_unique_ID = selectedId;
+
+  memset(data, 0, sizeof(uint32_t) * DEPTH_ARRAY_SCALE);
+  vkUnmapMemory(vDevice->logicalDevice, pickObjectBuffer.memory);
+}
+
+uint32_t GLTF_Model::idSelected() const {
+  return selectedId;
+}
+
+void GLTF_Model::prepareInputs() {
+  // Initial particle positions
+
+  // VkDeviceSize storageBufferSize = u_ptr_model->get_vertex_size() * sizeof(glm::vec2);
+  //
+  // enma::Buffer stagingBuffer;
+  // vDevice->createBuffer(
+  //   // The SSBO will be used as a storage buffer for the compute pipeline and as a vertex buffer in the graphics pipeline
+  //   storageBufferSize,
+  //   VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+  //   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+  //   &stagingBuffer,
+  //   u_ptr_model->getVertexBuffer().data()
+  // );
+  //
+  // vDevice->createBuffer(
+  //   sizeof(int),
+  //   // The SSBO will be used as a storage buffer for the compute pipeline and as a vertex buffer in the graphics pipeline
+  //   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+  //   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+  //   &u_ptr_compute->storageBuffer
+  // );
+
+  //Create buffer for get data from compute shader
+  // vDevice->createBuffer(
+  //   // The SSBO will be used as a storage buffer for the compute pipeline and as a vertex buffer in the graphics pipeline
+  //   sizeof(int),
+  //   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+  //   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+  //   &u_ptr_compute->hitBuffer
+  // );
+
+
+  // Copy from staging buffer to storage buffer
+  // VkCommandBuffer copyCmd = vDevice->beginSingleTimeCommands(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+  // VkBufferCopy copyRegion = {};
+  // copyRegion.size = sizeof(int);
+  // vkCmdCopyBuffer(copyCmd, stagingBuffer.buffer, u_ptr_compute->storageBuffer.buffer, 1, &copyRegion);
+
+  // Execute a transfer barrier to the compute queue, if necessary
+  // if (vDevice->queueFamilyIndices.graphics != u_ptr_compute->queueFamilyIndex) {
+  //   VkBufferMemoryBarrier buffer_barrier =
+  //   {
+  //     VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+  //     nullptr,
+  //     VK_ACCESS_SHADER_WRITE_BIT,
+  //     VK_ACCESS_SHADER_READ_BIT,
+  //     vDevice->queueFamilyIndices.graphics,
+  //     u_ptr_compute->queueFamilyIndex,
+  //     u_ptr_compute->storageBuffer.buffer,
+  //     0,
+  //     u_ptr_compute->storageBuffer.size
+  //   };
+  //
+  //   vkCmdPipelineBarrier(
+  //     copyCmd,
+  //     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+  //     VK_PIPELINE_STAGE_TRANSFER_BIT,
+  //     0,
+  //     0, nullptr,
+  //     1, &buffer_barrier,
+  //     0, nullptr);
+  // }
+  // vDevice->endSingleTimeCommands(copyCmd, vDevice->queue, true);
+
+  // stagingBuffer.destroy();
+}
+
+void GLTF_Model::prepareCompute() {
+  // Create a compute capable vDevice->logicalDevice queue
+  // The VulkanDevice::createLogicalDevice functions finds a compute capable queue and prefers queue families that only support compute
+  // Depending on the implementation this may result in different queue family indices for graphics and computes,
+  // requiring proper synchronization (see the memory and pipeline barriers)
+  // vkGetDeviceQueue(vDevice->logicalDevice, u_ptr_compute->queueFamilyIndex, 0, &u_ptr_compute->queue);
+  //
+  // // Create compute pipeline
+  // // Compute pipelines are created separate from graphics pipelines even if they use the same queue (family index)
+  //
+  // std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
+  //   // Binding 0 : Particle position storage buffer
+  //   initializers::descriptorSetLayoutBinding(
+  //     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+  //     VK_SHADER_STAGE_COMPUTE_BIT,
+  //     0),
+  //   // Binding 1 : Uniform buffer
+  //   initializers::descriptorSetLayoutBinding(
+  //     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+  //     VK_SHADER_STAGE_COMPUTE_BIT,
+  //     1)
+  // };
+  //
+  // VkDescriptorSetLayoutCreateInfo descriptorLayout =
+  //     initializers::descriptorSetLayoutCreateInfo(
+  //       setLayoutBindings.data(),
+  //       static_cast<uint32_t>(setLayoutBindings.size()));
+  //
+  // VK_CHECK_RESULT(
+  //   vkCreateDescriptorSetLayout(vDevice->logicalDevice, &descriptorLayout, nullptr,
+  //     &u_ptr_compute->descriptorSetLayout));
+  //
+  // VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo =
+  //     initializers::pipelineLayoutCreateInfo(
+  //       &u_ptr_compute->descriptorSetLayout,
+  //       1);
+  //
+  // VkPushConstantRange pushConstantRange = initializers::pushConstantRange(
+  //   VK_SHADER_STAGE_COMPUTE_BIT, sizeof(vert_ubo_vertices_share), 0);
+  // // Push constant ranges are part of the pipeline layout
+  // pPipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+  // pPipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
+  //
+  //
+  // VK_CHECK_RESULT(
+  //   vkCreatePipelineLayout(vDevice->logicalDevice, &pPipelineLayoutCreateInfo, nullptr,
+  //     &u_ptr_compute->pipelineLayout));
+  //
+  // VkDescriptorSetAllocateInfo allocInfo =
+  //     initializers::descriptorSetAllocateInfo(
+  //       descriptorPool,
+  //       &u_ptr_compute->descriptorSetLayout,
+  //       1);
+  //
+  // VK_CHECK_RESULT(vkAllocateDescriptorSets(vDevice->logicalDevice, &allocInfo, &u_ptr_compute->descriptorSet));
+  //
+  // std::vector<VkWriteDescriptorSet> computeWriteDescriptorSets =
+  // {
+  //   // Binding 0 : Particle position storage buffer
+  //   initializers::writeDescriptorSet(
+  //     u_ptr_compute->descriptorSet,
+  //     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+  //     0,
+  //     &u_ptr_compute->storageBuffer.descriptor),
+  //   // Binding 1 : Uniform buffer
+  //   initializers::writeDescriptorSet(
+  //     u_ptr_compute->descriptorSet,
+  //     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+  //     1,
+  //     &u_ptr_compute->hitBuffer.descriptor),
+  // };
+  //
+  // vkUpdateDescriptorSets(vDevice->logicalDevice, static_cast<uint32_t>(computeWriteDescriptorSets.size()),
+  //                        computeWriteDescriptorSets.data(), 0, nullptr);
+  //
+  // // Create pipeline
+  // VkComputePipelineCreateInfo computePipelineCreateInfo = initializers::computePipelineCreateInfo(
+  //   u_ptr_compute->pipelineLayout, 0);
+  // computePipelineCreateInfo.stage = shadersStages[2];
+  //
+  // //loadShader(getShadersPath() + "computeparticles/particle.comp.spv",
+  // // VK_SHADER_STAGE_COMPUTE_BIT);
+  // VK_CHECK_RESULT(
+  //   vkCreateComputePipelines(vDevice->logicalDevice, pipelineCache, 1, &computePipelineCreateInfo, nullptr,
+  //     &u_ptr_compute->pipeline));
+  //
+  // // Separate command pool as queue family for compute may be different than graphics
+  // VkCommandPoolCreateInfo cmdPoolInfo = {};
+  // cmdPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+  // cmdPoolInfo.queueFamilyIndex = u_ptr_compute->queueFamilyIndex;
+  // cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+  // VK_CHECK_RESULT(vkCreateCommandPool(vDevice->logicalDevice, &cmdPoolInfo, nullptr, &u_ptr_compute->commandPool));
+  //
+  // // Create a command buffer for compute operations
+  // u_ptr_compute->commandBuffer = vDevice->beginSingleTimeCommands(VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+  //                                                                 u_ptr_compute->commandPool,
+  //                                                                 false);
+  //
+  // // Semaphore for compute & graphics sync
+  // VkSemaphoreCreateInfo semaphoreCreateInfo = initializers::semaphoreCreateInfo();
+  //
+  // VK_CHECK_RESULT(
+  //   vkCreateSemaphore(vDevice->logicalDevice, &semaphoreCreateInfo, nullptr, &u_ptr_compute->compute));
+  //
+  // prepareBuildComputeBuffer();
+}
+
+void GLTF_Model::prepareBuildComputeBuffer() {
+  VkCommandBufferBeginInfo cmdBufInfo = initializers::commandBufferBeginInfo();
+
+  VK_CHECK_RESULT(vkBeginCommandBuffer(u_ptr_compute->commandBuffer, &cmdBufInfo));
+
+  // Compute particle movement
+
+  // Add memory barrier to ensure that the (graphics) vertex shader has fetched attributes before compute starts to write to the buffer
+  if (vDevice->queueFamilyIndices.graphics != u_ptr_compute->queueFamilyIndex) {
+    VkBufferMemoryBarrier buffer_barrier =
+    {
+      VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+      nullptr,
+      0,
+      VK_ACCESS_SHADER_WRITE_BIT,
+      vDevice->queueFamilyIndices.graphics,
+      u_ptr_compute->queueFamilyIndex,
+      u_ptr_compute->storageBuffer.buffer,
+      0,
+      u_ptr_compute->storageBuffer.size
+    };
+
+    vkCmdPipelineBarrier(
+      u_ptr_compute->commandBuffer,
+      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+      0,
+      0, nullptr,
+      1, &buffer_barrier,
+      0, nullptr);
+  }
+
+  VkDeviceSize offsets[1] = {0};
+  vkCmdBindVertexBuffers(u_ptr_compute->commandBuffer, 0, 1, &u_ptr_compute->storageBuffer.buffer, offsets);
+
+  // TODO: PushConstant check u_ptr_compute buffer if need
+  if (mouse_position) {
+    mouse_vec2_ = *mouse_position;
+    glm::vec2 cur_window = {*vDevice->uWidth(), *vDevice->uHeight()};
+    mouse_vec2_ = mouse_vec2_ / cur_window;
+  }
+  vkCmdPushConstants(u_ptr_compute->commandBuffer, u_ptr_compute->pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                     sizeof(glm::vec2),
+                     &mouse_vec2_);
+
+  // Dispatch the compute job
+  vkCmdBindPipeline(u_ptr_compute->commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, u_ptr_compute->pipeline);
+  vkCmdBindDescriptorSets(u_ptr_compute->commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, u_ptr_compute->pipelineLayout,
+                          0, 1,
+                          &u_ptr_compute->descriptorSet, 0, 0);
+  uint32_t vertices_size = (u_ptr_model->get_vertex_size() + 256 - 1) / 256;
+  vkCmdDispatch(u_ptr_compute->commandBuffer, vertices_size, 1, 1);
+
+  // Add barrier to ensure that compute shader has finished writing to the buffer
+  // Without this the (rendering) vertex shader may display incomplete results (partial data from last frame)
+  if (vDevice->queueFamilyIndices.graphics != u_ptr_compute->queueFamilyIndex) {
+    VkBufferMemoryBarrier buffer_barrier =
+    {
+      VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+      nullptr,
+      VK_ACCESS_SHADER_WRITE_BIT,
+      0,
+      u_ptr_compute->queueFamilyIndex,
+      vDevice->queueFamilyIndices.graphics,
+      u_ptr_compute->storageBuffer.buffer,
+      0,
+      u_ptr_compute->storageBuffer.size
+    };
+
+    vkCmdPipelineBarrier(
+      u_ptr_compute->commandBuffer,
+      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+      0,
+      0, nullptr,
+      1, &buffer_barrier,
+      0, nullptr);
+  }
+
+  vkEndCommandBuffer(u_ptr_compute->commandBuffer);
+}
+
+void GLTF_Model::prepareUniformBuffers() {
+  // Compute shader uniform buffer block
+  // vDevice->createBuffer(
+  //   sizeof(vert_ubo_vertices_share) * u_ptr_model->get_vertex_size(),
+  //   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+  //   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+  //   &u_ptr_compute->uniformBuffer
+  // );
+  //
+  // // Map for host access
+  // VK_CHECK_RESULT(u_ptr_compute->uniformBuffer.map());
 }
 
 Transparent_Model::Transparent_Model(std::string _path) : Model(std::move(_path),
-                                                                model_type::FROMOBJ) {
+                                                                model_type::from_obj_file) {
   subpass_layout = 1;
   render_flags = ObjectRenderFlags::TRNOBJECT;
 }
@@ -3665,7 +3896,7 @@ void Transparent_Model::draw(VkCommandBuffer _buffer) {
     return;
   //        vkCmdNextSubpass(_buffer, VK_SUBPASS_CONTENTS_INLINE);
   vkCmdBindPipeline(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptor, 0, NULL);
+  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptor, 0, NULL);
 
   const VkDeviceSize offsets[1] = {0};
   VkBuffer *vertexBuffers = &getBuffer()->vert;
@@ -3676,7 +3907,7 @@ void Transparent_Model::draw(VkCommandBuffer _buffer) {
 }
 
 VkDeviceSize Transparent_Model::getBufferSize() {
-  return VkDeviceSize(sizeof(UniformBufferTransparent));
+  return static_cast<VkDeviceSize>(sizeof(UniformBufferTransparent));
 }
 
 void Transparent_Model::updateMapped() {
@@ -3687,6 +3918,7 @@ void Transparent_Model::createAdditinalBuffer() {
   Model::createAdditinalBuffer();
 }
 
+
 TextOverlay::TextOverlay() : Object(), frameBufferWidth(nullptr), frameBufferHeight(nullptr),
                              scale(0) {
 }
@@ -3694,7 +3926,6 @@ TextOverlay::TextOverlay() : Object(), frameBufferWidth(nullptr), frameBufferHei
 TextOverlay::~TextOverlay() = default;
 
 void TextOverlay::prepareResources() {
-
 }
 
 void TextOverlay::preparePipeline() {
@@ -3744,7 +3975,8 @@ void TextOverlay::preparePipeline() {
   vertexInputState.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexInputAttributes.size());
   vertexInputState.pVertexAttributeDescriptions = vertexInputAttributes.data();
 
-  VkGraphicsPipelineCreateInfo pipelineCreateInfo = initializers::pipelineCreateInfo(pipelineLayout, vDevice->renderPass,
+  VkGraphicsPipelineCreateInfo pipelineCreateInfo = initializers::pipelineCreateInfo(
+    pipelineLayout, vDevice->renderPass,
     0);
   pipelineCreateInfo.pVertexInputState = &vertexInputState;
   pipelineCreateInfo.pInputAssemblyState = &inputAssemblyState;
@@ -3756,6 +3988,7 @@ void TextOverlay::preparePipeline() {
   pipelineCreateInfo.pDynamicState = &dynamicState;
   pipelineCreateInfo.stageCount = static_cast<uint32_t>(shadersStages.size());
   pipelineCreateInfo.pStages = shadersStages.data();
+  pipelineCreateInfo.subpass = subpass_layout; // TODO: see that is it
 
   VK_CHECK_RESULT(
     vkCreateGraphicsPipelines(vDevice->logicalDevice, pipelineCache, 1, &pipelineCreateInfo, nullptr,
@@ -3872,14 +4105,13 @@ void TextOverlay::prepareRenderPass() {
 }
 
 void TextOverlay::createFramebuffers(VulkanSwapChain *vkSwapChain) {
-
 }
 
 void TextOverlay::updateScale(float nScale) {
   scale = nScale;
 }
 
-void TextOverlay::updateFrameSize( uint32_t* width, uint32_t* height) {
+void TextOverlay::updateFrameSize(uint32_t *width, uint32_t *height) {
   frameBufferHeight = height;
   frameBufferWidth = width;
 }
@@ -3954,6 +4186,71 @@ void TextOverlay::addText(std::string text, float x, float y, TextOverlay::TextA
   }
 }
 
+void TextOverlay::addPlateText(std::string text, float x, float y, TextAlign align) {
+  const uint32_t firstChar = STB_FONT_consolas_24_latin1_FIRST_CHAR;
+
+  assert(mapped != nullptr);
+
+  const float charW = 1.5f * scale / *frameBufferWidth;
+  const float charH = 1.5f * scale / *frameBufferHeight;
+
+  float fbW = (float) *frameBufferWidth;
+  float fbH = (float) *frameBufferHeight;
+  x = (x / fbW * 2.0f);
+  y = (y / fbH * 2.0f);
+
+  // Calculate text width
+  float textWidth = 0;
+  for (auto letter: text) {
+    stb_fontchar *charData = &stbFontData[(uint32_t) letter - firstChar];
+    textWidth += charData->advance * charW;
+  }
+
+  switch (align) {
+    case alignRight:
+      x -= textWidth;
+      break;
+    case alignCenter:
+      x -= textWidth / 2.0f;
+      break;
+    case alignLeft:
+      break;
+  }
+
+  // Generate a uv mapped quad per char in the new text
+  for (auto letter: text) {
+    stb_fontchar *charData = &stbFontData[(uint32_t) letter - firstChar];
+
+    mapped->x = (x + (float) charData->x0 * charW);
+    mapped->y = (y + (float) charData->y0 * charH);
+    mapped->z = charData->s0;
+    mapped->w = charData->t0;
+    mapped++;
+
+    mapped->x = (x + (float) charData->x1 * charW);
+    mapped->y = (y + (float) charData->y0 * charH);
+    mapped->z = charData->s1;
+    mapped->w = charData->t0;
+    mapped++;
+
+    mapped->x = (x + (float) charData->x0 * charW);
+    mapped->y = (y + (float) charData->y1 * charH);
+    mapped->z = charData->s0;
+    mapped->w = charData->t1;
+    mapped++;
+
+    mapped->x = (x + (float) charData->x1 * charW);
+    mapped->y = (y + (float) charData->y1 * charH);
+    mapped->z = charData->s1;
+    mapped->w = charData->t1;
+    mapped++;
+
+    x += charData->advance * charW;
+
+    numLetters++;
+  }
+}
+
 // TODO: Need update build command buffer
 void TextOverlay::endTextUpdate() {
   vkUnmapMemory(vDevice->logicalDevice, memory);
@@ -3961,11 +4258,12 @@ void TextOverlay::endTextUpdate() {
 }
 
 void TextOverlay::draw(VkCommandBuffer _buffer) {
-  if (!is_object_visible)
-    return;
   vkCmdBindPipeline(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1,
+  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1,
                           &descriptor, 0, NULL);
+
+  // if (pushConstBlock.scale != glm::vec2(0))
+  vkCmdPushConstants(_buffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstBlock), &pushConstBlock);
 
   VkDeviceSize offsets = 0;
   vkCmdBindVertexBuffers(_buffer, 0, 1, &buffer, &offsets);
@@ -3976,26 +4274,26 @@ void TextOverlay::draw(VkCommandBuffer _buffer) {
 }
 
 void TextOverlay::initialization() {
-
+  updateFrameSize(vDevice->uWidth(), vDevice->uHeight());
 }
 
 VkDeviceSize TextOverlay::getBufferSize() {
-  return VkDeviceSize();
+  return static_cast<VkDeviceSize>(sizeof(UniformBuffer2D));
 }
 
 uint32_t TextOverlay::getTexturesSize() {
   return textures.size();
 }
 
-VkDescriptorImageInfo * TextOverlay::get_descriptor_image(size_t tex_idx) {
+VkDescriptorImageInfo *TextOverlay::get_descriptor_image(size_t tex_idx) {
   return nullptr;
 }
 
-viBuffer * TextOverlay::getBuffer() {
+viBuffer *TextOverlay::getBuffer() {
   return nullptr;
 }
 
-std::vector<uint32_t> * TextOverlay::getIndices() {
+std::vector<uint32_t> *TextOverlay::getIndices() {
   return 0;
 }
 
@@ -4021,7 +4319,7 @@ void TextOverlay::loadTexture(VkImageViewType type) {
   //
   // VK_CHECK_RESULT(vkAllocateCommandBuffers(vDevice->logicalDevice, &cmdBufAllocateInfo, cmdBuffers.data()));
 
-   // // Vertex buffer
+  // // Vertex buffer
   VkDeviceSize bufferSize = TEXTOVERLAY_MAX_CHAR_COUNT * sizeof(glm::vec4);
 
   VkBufferCreateInfo bufferInfo = initializers::bufferCreateInfo(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, bufferSize);
@@ -4033,8 +4331,8 @@ void TextOverlay::loadTexture(VkImageViewType type) {
   vkGetBufferMemoryRequirements(vDevice->logicalDevice, buffer, &memReqs);
   allocInfo.allocationSize = memReqs.size;
   allocInfo.memoryTypeIndex = vDevice->getMemoryType(memReqs.memoryTypeBits,
-                                                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
   VK_CHECK_RESULT(vkAllocateMemory(vDevice->logicalDevice, &allocInfo, nullptr, &memory));
   VK_CHECK_RESULT(vkBindBufferMemory(vDevice->logicalDevice, buffer, memory, 0));
@@ -4059,7 +4357,7 @@ void TextOverlay::loadTexture(VkImageViewType type) {
   vkGetImageMemoryRequirements(vDevice->logicalDevice, image, &memReqs);
   allocInfo.allocationSize = memReqs.size;
   allocInfo.memoryTypeIndex = vDevice->getMemoryType(memReqs.memoryTypeBits,
-                                                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                                                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
   VK_CHECK_RESULT(vkAllocateMemory(vDevice->logicalDevice, &allocInfo, nullptr, &imageMemory));
   VK_CHECK_RESULT(vkBindImageMemory(vDevice->logicalDevice, image, imageMemory, 0));
@@ -4084,8 +4382,8 @@ void TextOverlay::loadTexture(VkImageViewType type) {
   allocInfo.allocationSize = memReqs.size;
   // Get memory type index for a host visible buffer
   allocInfo.memoryTypeIndex = vDevice->getMemoryType(memReqs.memoryTypeBits,
-                                                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
   VK_CHECK_RESULT(vkAllocateMemory(vDevice->logicalDevice, &allocInfo, nullptr, &stagingBuffer.memory));
   VK_CHECK_RESULT(vkBindBufferMemory(vDevice->logicalDevice, stagingBuffer.buffer, stagingBuffer.memory, 0));
@@ -4102,8 +4400,8 @@ void TextOverlay::loadTexture(VkImageViewType type) {
   VkCommandBuffer copyCmd;
 
   copyCmd = vDevice->beginSingleTimeCommands(VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-                                                                  commandPool,
-                                                                  false);
+                                             commandPool,
+                                             false);
 
   VkCommandBufferBeginInfo cmdBufInfo = initializers::commandBufferBeginInfo();
   VK_CHECK_RESULT(vkBeginCommandBuffer(copyCmd, &cmdBufInfo));
@@ -4178,7 +4476,6 @@ void TextOverlay::loadTexture(VkImageViewType type) {
   samplerInfo.maxLod = 1.0f;
   samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
   VK_CHECK_RESULT(vkCreateSampler(vDevice->logicalDevice, &samplerInfo, nullptr, &sampler));
-
 }
 
 void TextOverlay::destroy() {
@@ -4189,12 +4486,25 @@ void TextOverlay::destroy() {
   vkDestroyImage(vDevice->logicalDevice, image, nullptr);
   vkDestroyImageView(vDevice->logicalDevice, view, nullptr);
   vkFreeMemory(vDevice->logicalDevice, imageMemory, nullptr);
-  vkDestroyDescriptorSetLayout(vDevice->logicalDevice, descriptorSetLayout, nullptr);
-  vkDestroyDescriptorPool(vDevice->logicalDevice, descriptorPool, nullptr);
+  // vkDestroyDescriptorSetLayout(vDevice->logicalDevice, descriptorSetLayout, nullptr);
+  // vkDestroyDescriptorPool(vDevice->logicalDevice, descriptorPool, nullptr);
   vkDestroyCommandPool(vDevice->logicalDevice, commandPool, nullptr);
 }
 
 void TextOverlay::setObjectInfo(pipeline_parameters *_parameters, VkGraphicsPipelineCreateInfo *pipelineInfo) {
+  _parameters->colorBlendAttachment->blendEnable = VK_TRUE;
+  _parameters->colorBlendAttachment->srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+  _parameters->colorBlendAttachment->dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+  _parameters->colorBlendAttachment->colorBlendOp = VK_BLEND_OP_ADD;
+  _parameters->colorBlendAttachment->srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+  _parameters->colorBlendAttachment->dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+  _parameters->colorBlendAttachment->alphaBlendOp = VK_BLEND_OP_ADD;
+  _parameters->colorBlendAttachment->colorWriteMask =
+      VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+      VK_COLOR_COMPONENT_A_BIT;
+
+  _parameters->rasterizer->cullMode = VK_CULL_MODE_NONE;
+  _parameters->rasterizer->frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 }
 
 void TextOverlay::update(float frame_time) {
@@ -4204,11 +4514,12 @@ void TextOverlay::prepare() {
 }
 
 void TextOverlay::setDescriptorLayout() {
-
   // Descriptor set layout
-  std::array<VkDescriptorSetLayoutBinding, 1> setLayoutBindings;
+  std::array<VkDescriptorSetLayoutBinding, 2> setLayoutBindings;
   setLayoutBindings[0] = initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                                                                   VK_SHADER_STAGE_FRAGMENT_BIT, 0);
+  setLayoutBindings[1] = initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                                  VK_SHADER_STAGE_VERTEX_BIT, 1);
 
   VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo =
       initializers::descriptorSetLayoutCreateInfo(
@@ -4217,11 +4528,21 @@ void TextOverlay::setDescriptorLayout() {
   VK_CHECK_RESULT(vkCreateDescriptorSetLayout(vDevice->logicalDevice, &descriptorSetLayoutInfo, nullptr,
     &descriptorSetLayout));
 
+  vkDescriptorLayouts.emplace_back(descriptorSetLayout);
+
+  VkPushConstantRange pushConstantRange = initializers::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT,
+                                                                          sizeof(PushConstBlock), 0);
+
+
   // Pipeline layout
   VkPipelineLayoutCreateInfo pipelineLayoutInfo =
       initializers::pipelineLayoutCreateInfo(
-        &descriptorSetLayout,
-        1);
+        vkDescriptorLayouts.data(),
+        vkDescriptorLayouts.size());
+
+  pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+  pipelineLayoutInfo.pushConstantRangeCount = 1;
+
   VK_CHECK_RESULT(
     vkCreatePipelineLayout(vDevice->logicalDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout));
 }
@@ -4245,10 +4566,13 @@ void TextOverlay::createDescriptorSets() {
         view,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-  std::array<VkWriteDescriptorSet, 1> writeDescriptorSets;
+  std::array<VkWriteDescriptorSet, 2> writeDescriptorSets;
   writeDescriptorSets[0] = initializers::writeDescriptorSet(descriptor,
                                                             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0,
                                                             &texDescriptor);
+  writeDescriptorSets[1] = (initializers::createVkWriteDescriptorBuffer(1,
+                                                                        &uniformObjectBuffer.descriptor,
+                                                                        descriptor));
   vkUpdateDescriptorSets(vDevice->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()),
                          writeDescriptorSets.data(), 0, NULL);
 }
@@ -4256,24 +4580,22 @@ void TextOverlay::createDescriptorSets() {
 void TextOverlay::createDescriptorPool() {
   // Descriptor
   // Font uses a separate descriptor pool
-  std::array<VkDescriptorPoolSize, 1> poolSizes;
-  poolSizes[0] = initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1);
-
-  VkDescriptorPoolCreateInfo descriptorPoolInfo =
-      initializers::descriptorPoolCreateInfo(
-        static_cast<uint32_t>(poolSizes.size()),
-        poolSizes.data(),
-        1);
-
-  VK_CHECK_RESULT(
-    vkCreateDescriptorPool(vDevice->logicalDevice, &descriptorPoolInfo, nullptr, &descriptorPool));
-
+  vkPoolSizes.emplace_back(initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1));
+  vkPoolSizes.emplace_back(initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1));
+  poolDrawSize = vkPoolSizes.size();
 }
 
 void TextOverlay::createUniformBuffer() {
+  vDevice->createBuffer(getBufferSize(),
+                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                        &uniformObjectBuffer);
+  uniformObjectBuffer.map();
 }
 
 void TextOverlay::updateMapped() {
+  memcpy(uniformObjectBuffer.mapped, &text_ubo, sizeof(text_ubo));
 }
 
 void TextOverlay::createAdditinalBuffer() {
@@ -4385,7 +4707,6 @@ void Model3D::destroy() {
   }
   vertexBuffer.destroy();
   indexBuffer.destroy();
-  // vkDestroyPipelineCache(vDevice->logicalDevice, pipelineCache, nullptr);
 }
 
 void Model3D::updateTexture(uint8_t *data) {
@@ -4627,10 +4948,12 @@ void Model3D::setDescriptorLayout() {
     throw std::runtime_error("failed to create descriptor set layout!");
   }
 
+  vkDescriptorLayouts.emplace_back(descriptorSetLayout);
+
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipelineLayoutInfo.setLayoutCount = 1;
-  pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+  pipelineLayoutInfo.setLayoutCount = vkDescriptorLayouts.size();
+  pipelineLayoutInfo.pSetLayouts = vkDescriptorLayouts.data();
 
   if (vkCreatePipelineLayout(vDevice->logicalDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
       VK_SUCCESS) {
@@ -4835,21 +5158,13 @@ void Model3D::createDescriptorPool() {
   size_t draw_size = 0;
   draw_size += getTexturesSize();
 
-  std::array<VkDescriptorPoolSize, 2> poolSizes{};
-  poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size);
-  poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size * 2);
-
-  VkDescriptorPoolCreateInfo poolInfo{};
-  poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-  poolInfo.pPoolSizes = poolSizes.data();
-  poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size);
-
-  if (vkCreateDescriptorPool(vDevice->logicalDevice, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create descriptor pool!");
-  }
+  vkPoolSizes.emplace_back();
+  vkPoolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  vkPoolSizes.back().descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size);
+  vkPoolSizes.emplace_back();
+  vkPoolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  vkPoolSizes.back().descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size * 2);
+  poolDrawSize += MAX_FRAMES_IN_FLIGHT * draw_size;
 }
 
 VkDeviceSize Model3D::getBufferSize() {
@@ -4865,13 +5180,68 @@ void Model3D::createAdditinalBuffer() {
 
 Model2D::Model2D(const std::vector<Vertex> &_vertices, const std::vector<uint32_t> &_indices, uint8_t *_texture_data)
   : Object() {
+  subpass_layout = 1;
+  render_flags = ObjectRenderFlags::TRNOBJECT;
+
   buff_vertices = _vertices;
   buff_indices = _indices;
   texture_data = _texture_data;
+
+  text = new TextOverlay();
+  text->subpass_layout = subpass_layout;
+  text->render_flags = ObjectRenderFlags::TRNOBJECT;
+  text->load_object_shaders({SHADER_DIRECTORY"/plate_text.vert.spv",SHADER_DIRECTORY"/plate_text.frag.spv"});
 }
 
 void Model2D::initialization() {
   generateQuad(buff_vertices, buff_indices);
+  text->setEngineDepends(vDevice, vSwapChain);
+  text->initialization();
+}
+
+void Model2D::modelVertexUpdate(const std::vector<Vertex>& points) {
+  VkDeviceSize _size = sizeof(Vertex) * points.size();
+
+  if (_size > buff_vertices.capacity()) {
+    if (vertexBuffer.buffer) {
+      vkDestroyBuffer(vDevice->logicalDevice, vertexBuffer.buffer, nullptr);
+      vkFreeMemory(vDevice->logicalDevice, vertexBuffer.memory, nullptr);
+    }
+
+    VkDeviceSize _capacity = std::max(_size, buff_vertices.capacity() * 3 / 2);
+
+    VK_CHECK_RESULT(vDevice->createBuffer(
+      points.size() * sizeof(Vertex),
+      VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+      &vertexBuffer,
+      (void*)(points.data())));
+  }
+
+  void *data;
+  vkMapMemory(vDevice->logicalDevice, vertexBuffer.memory, 0, _size, 0, &data);
+  memcpy(data, points.data(), _size);
+  vkUnmapMemory(vDevice->logicalDevice, vertexBuffer.memory);
+  buff_vertices = points;
+  //Mark update buildCommandBuffer
+}
+
+void Model2D::plateTextUpdate() {
+  text->text_ubo.viewPos = model2d_ubo.viewPos;
+  text->pushConstBlock.scale = pushConstBlock.scale;
+  text->pushConstBlock.translate = pushConstBlock.translate;
+
+  text->updateScale(2.0);
+  text->updateFrameSize(vDevice->uWidth(), vDevice->uHeight());
+  text->beginTextUpdate();
+}
+
+void Model2D::addTextToPlate(const std::string &str, float x, float y) {
+  text->addPlateText(str, x, y, TextOverlay::alignLeft);
+}
+
+void Model2D::plateTextEnd() {
+  text->endTextUpdate();
 }
 
 void Model2D::generateQuad(std::vector<Vertex> _vertices, std::vector<uint32_t> _indices) {
@@ -4915,7 +5285,16 @@ void Model2D::destroy() {
   }
   vertexBuffer.destroy();
   indexBuffer.destroy();
-  // vkDestroyPipelineCache(vDevice->logicalDevice, pipelineCache, nullptr);
+  //FIXME: additional destroy for text overlay on model2
+  vkDestroyPipelineCache(vDevice->logicalDevice, text->pipelineCache, nullptr);
+  vkDestroyPipeline(vDevice->logicalDevice, text->pipeline, nullptr);
+  vkDestroyPipelineLayout(vDevice->logicalDevice, text->pipelineLayout, nullptr);
+  vkDestroyRenderPass(vDevice->logicalDevice, text->renderPass, nullptr);
+  text->destroyShaderModules();
+  text->uniformObjectBuffer.destroy();
+  vkDestroyDescriptorSetLayout(vDevice->logicalDevice, text->get_descriptor_set_layout(), nullptr);
+  vkDestroyDescriptorPool(vDevice->logicalDevice, text->descriptorPool, nullptr);
+  text->object_destroy();
 }
 
 void Model2D::updateTexture(uint8_t *data) {
@@ -5032,6 +5411,9 @@ void Model2D::loadTexture(VkImageViewType type) {
     textures.back()->prepareTexture(vDevice, vSwapChain, image.texture_width, image.texture_height,
                                     image.texture_depth, image.texture_byte_count);
   }
+  // FIXME: Recreate for text overlay object
+  text->loadTexture(VK_IMAGE_VIEW_TYPE_2D);
+  text->setObjectShaders();
 }
 
 void Model2D::preparePipeline() {
@@ -5092,23 +5474,27 @@ void Model2D::preparePipeline() {
       VK_SUCCESS) {
     throw std::runtime_error("failed to create graphics pipeline!");
   }
+  text->preparePipeline();
 }
 
 void Model2D::draw(VkCommandBuffer _buffer) {
-  if (!is_object_visible)
-    return;
   VkDeviceSize offsets[1] = {0};
 
   vkCmdBindPipeline(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptor, 0,
+  // vkCmdPushConstants(_buffer, pipelineLayout, VK_SHADER_STAGE_GEOMETRY_BIT, 1, sizeof(PushConstantTo), &push_constants);
+
+  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptor, 0,
                           nullptr);
 
+  vkCmdPushConstants(_buffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstBlock), &pushConstBlock);
   VkBuffer *vertexBuffers = &getBuffer()->vert;
   vkCmdBindVertexBuffers(_buffer, 0, 1, vertexBuffers, offsets);
 
   vkCmdBindIndexBuffer(_buffer, getBuffer()->ind, 0, VK_INDEX_TYPE_UINT32);
   vkCmdDrawIndexed(_buffer, static_cast<uint32_t>(getIndices()->size()), 1, 0, 0, 0);
+
+  text->draw(_buffer);
 }
 
 uint32_t Model2D::getTexturesSize() {
@@ -5142,6 +5528,13 @@ void Model2D::setDescriptorLayout() {
   normalLayoutBinding.pImmutableSamplers = nullptr;
   normalLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
+  // VkDescriptorSetLayoutBinding uboLayoutBindingGeometry{};
+  // uboLayoutBinding.binding = 3;
+  // uboLayoutBinding.descriptorCount = 1;
+  // uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  // uboLayoutBinding.pImmutableSamplers = nullptr;
+  // uboLayoutBinding.stageFlags = VK_SHADER_STAGE_GEOMETRY_BIT;
+
   std::vector<VkDescriptorSetLayoutBinding> bindings = {
     uboLayoutBinding,
     samplerLayoutBinding,
@@ -5152,20 +5545,33 @@ void Model2D::setDescriptorLayout() {
   layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
   layoutInfo.pBindings = bindings.data();
 
+
   if (vkCreateDescriptorSetLayout(vDevice->logicalDevice, &layoutInfo, nullptr, &descriptorSetLayout) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to create descriptor set layout!");
   }
 
+  vkDescriptorLayouts.emplace_back(descriptorSetLayout);
+
+  std::vector<VkPushConstantRange> pushConstantRange =
+    {
+    initializers::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT,sizeof(PushConstBlock), 0),
+    // initializers::pushConstantRange(VK_SHADER_STAGE_GEOMETRY_BIT, sizeof(PushConstantTo), 1)
+    };
+
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipelineLayoutInfo.setLayoutCount = 1;
-  pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+  pipelineLayoutInfo.setLayoutCount = vkDescriptorLayouts.size();
+  pipelineLayoutInfo.pushConstantRangeCount = pushConstantRange.size();
+  pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
+  pipelineLayoutInfo.pSetLayouts = vkDescriptorLayouts.data();
 
   if (vkCreatePipelineLayout(vDevice->logicalDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to create pipeline layout!");
   }
+
+  text->objectSetDescriptorLayout();
 }
 
 void Model2D::createFramebuffers(VulkanSwapChain *vkSwapChain) {
@@ -5296,6 +5702,8 @@ void Model2D::createUniformBuffer() {
                         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                         &uniformObjectBuffer);
   uniformObjectBuffer.map();
+
+  text->createAllBuffers();
 }
 
 void Model2D::setObjectInfo(pipeline_parameters *_parameters, VkGraphicsPipelineCreateInfo *pipelineInfo) {
@@ -5316,9 +5724,21 @@ void Model2D::setObjectInfo(pipeline_parameters *_parameters, VkGraphicsPipeline
   _parameters->vertexInputInfo->pVertexBindingDescriptions = &vertex.vertexInputBindingDescription;
   _parameters->vertexInputInfo->pVertexAttributeDescriptions = vertex.vertexInputAttributeDescriptions.data();
 
-  _parameters->colorBlendAttachment->blendEnable = VK_FALSE;
   _parameters->depthStencil->depthWriteEnable = VK_TRUE;
   _parameters->inputAssembly->topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+  _parameters->colorBlendAttachment->blendEnable = VK_TRUE;
+  _parameters->colorBlendAttachment->srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+  _parameters->colorBlendAttachment->dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+  _parameters->colorBlendAttachment->colorBlendOp = VK_BLEND_OP_ADD;
+  _parameters->colorBlendAttachment->srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+  _parameters->colorBlendAttachment->dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+  _parameters->colorBlendAttachment->alphaBlendOp = VK_BLEND_OP_ADD;
+  _parameters->colorBlendAttachment->colorWriteMask =
+      VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+      VK_COLOR_COMPONENT_A_BIT;
+
+  _parameters->rasterizer->cullMode = VK_CULL_MODE_NONE;
+  _parameters->rasterizer->frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 }
 
 viBuffer *Model2D::getBuffer() {
@@ -5359,27 +5779,24 @@ void Model2D::createDescriptorSets() {
                                                    get_descriptor_set()));
   vkUpdateDescriptorSets(vDevice->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()),
                          descriptorWrites.data(), 0, nullptr);
+
+  text->objectCreateDescriptorSets();
 }
 
 void Model2D::createDescriptorPool() {
   size_t draw_size = 0;
   draw_size += getTexturesSize();
 
-  std::array<VkDescriptorPoolSize, 2> poolSizes{};
-  poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size);
-  poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size * 2);
+  vkPoolSizes.emplace_back();
+  vkPoolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  vkPoolSizes.back().descriptorCount = 1;
+  vkPoolSizes.emplace_back();
+  vkPoolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  vkPoolSizes.back().descriptorCount = 1;
 
-  VkDescriptorPoolCreateInfo poolInfo{};
-  poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-  poolInfo.pPoolSizes = poolSizes.data();
-  poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size);
+  poolDrawSize = vkPoolSizes.size();
 
-  if (vkCreateDescriptorPool(vDevice->logicalDevice, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create descriptor pool!");
-  }
+  text->objectCreateDescriptorPool();
 }
 
 VkDeviceSize Model2D::getBufferSize() {
@@ -5388,11 +5805,11 @@ VkDeviceSize Model2D::getBufferSize() {
 
 void Model2D::updateMapped() {
   memcpy(uniformObjectBuffer.mapped, &model2d_ubo, sizeof(model2d_ubo));
+  text->updateMapped();
 }
 
 void Model2D::createAdditinalBuffer() {
 }
-
 
 Line::Line(std::vector<Vertex> _vertices) : Object() {
   buff_vertices = std::move(_vertices);
@@ -5444,15 +5861,15 @@ void Line::destroy() {
 }
 
 void Line::updateLinePoints(const std::vector<Vertex> &new_points) {
-  VkDeviceSize _size = sizeof(Vertex)* new_points.size();
+  VkDeviceSize _size = sizeof(Vertex) * new_points.size();
 
   if (_size > buff_vertices.capacity()) {
     if (vertexBuffer.buffer) {
-      vkDestroyBuffer(vDevice->logicalDevice,vertexBuffer.buffer, nullptr);
-      vkFreeMemory(vDevice->logicalDevice,vertexBuffer.memory, nullptr);
+      vkDestroyBuffer(vDevice->logicalDevice, vertexBuffer.buffer, nullptr);
+      vkFreeMemory(vDevice->logicalDevice, vertexBuffer.memory, nullptr);
     }
 
-    VkDeviceSize _capacity = std::max(_size,buff_vertices.capacity()*3/2);
+    VkDeviceSize _capacity = std::max(_size, buff_vertices.capacity() * 3 / 2);
 
     VK_CHECK_RESULT(vDevice->createBuffer(
       new_points.size() * sizeof(Vertex),
@@ -5463,9 +5880,9 @@ void Line::updateLinePoints(const std::vector<Vertex> &new_points) {
   }
 
   void *data;
-  vkMapMemory(vDevice->logicalDevice,vertexBuffer.memory,0,_size,0,&data);
-  memcpy(data,new_points.data(),_size);
-  vkUnmapMemory(vDevice->logicalDevice,vertexBuffer.memory);
+  vkMapMemory(vDevice->logicalDevice, vertexBuffer.memory, 0, _size, 0, &data);
+  memcpy(data, new_points.data(), _size);
+  vkUnmapMemory(vDevice->logicalDevice, vertexBuffer.memory);
   buff_vertices = new_points;
   //Mark update buildCommandBuffer
 }
@@ -5530,7 +5947,7 @@ void Line::preparePipeline() {
 
 
   colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-                                      VK_COLOR_COMPONENT_A_BIT;
+                                        VK_COLOR_COMPONENT_A_BIT;
   colorBlendAttachment.blendEnable = VK_TRUE;
   colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
   colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
@@ -5580,14 +5997,12 @@ void Line::preparePipeline() {
 }
 
 void Line::draw(VkCommandBuffer _buffer) {
-  if (!is_object_visible)
-    return;
   VkDeviceSize offsets[1] = {0};
 
-  vkCmdPushConstants(_buffer,pipelineLayout, VK_SHADER_STAGE_GEOMETRY_BIT, 0,sizeof(PushConstantTo),&push_constants);
+  vkCmdPushConstants(_buffer, pipelineLayout, VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(PushConstantTo), &push_constants);
   vkCmdBindPipeline(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptor, 0,
+  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptor, 0,
                           nullptr);
   vkCmdBindVertexBuffers(_buffer, 0, 1, &vertexBuffer.buffer, offsets);
   vkCmdDraw(_buffer, buff_vertices.size(), 1, 0, 0);
@@ -5645,12 +6060,15 @@ void Line::setDescriptorLayout() {
     throw std::runtime_error("failed to create descriptor set layout!");
   }
 
+  vkDescriptorLayouts.emplace_back(descriptorSetLayout);
+
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipelineLayoutInfo.setLayoutCount = 1;
-  pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+  pipelineLayoutInfo.setLayoutCount = vkDescriptorLayouts.size();
+  pipelineLayoutInfo.pSetLayouts = vkDescriptorLayouts.data();
 
-  VkPushConstantRange pushConstantRange = initializers::pushConstantRange(VK_SHADER_STAGE_GEOMETRY_BIT, sizeof(PushConstantTo), 0);
+  VkPushConstantRange pushConstantRange = initializers::pushConstantRange(
+    VK_SHADER_STAGE_GEOMETRY_BIT, sizeof(PushConstantTo), 0);
   // Push constant ranges are part of the pipeline layout
   pipelineLayoutInfo.pushConstantRangeCount = 1;
   pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
@@ -5822,11 +6240,11 @@ VkDescriptorImageInfo *Line::get_descriptor_image(size_t tex_idx) {
 }
 
 void Line::createDescriptorSets() {
-  std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
+  std::vector<VkDescriptorSetLayout> layouts(1, descriptorSetLayout);
   VkDescriptorSetAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   allocInfo.descriptorPool = descriptorPool;
-  allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+  allocInfo.descriptorSetCount = 1;
   allocInfo.pSetLayouts = layouts.data();
   if (vkAllocateDescriptorSets(vDevice->logicalDevice, &allocInfo, &descriptor) != VK_SUCCESS) {
     throw std::runtime_error("failed to allocate descriptor sets!");
@@ -5842,26 +6260,10 @@ void Line::createDescriptorSets() {
 }
 
 void Line::createDescriptorPool() {
-  size_t draw_size = 0;
-  draw_size += getTexturesSize();
-
-  std::array<VkDescriptorPoolSize, 2> poolSizes{};
-  poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size);
-  if (draw_size > 0) {
-    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size * 2);
-  }
-
-  VkDescriptorPoolCreateInfo poolInfo{};
-  poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-  poolInfo.pPoolSizes = poolSizes.data();
-  poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * draw_size);
-
-  if (vkCreateDescriptorPool(vDevice->logicalDevice, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create descriptor pool!");
-  }
+  vkPoolSizes.emplace_back();
+  vkPoolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  vkPoolSizes.back().descriptorCount = 1;
+  poolDrawSize = vkPoolSizes.size();
 }
 
 VkDeviceSize Line::getBufferSize() {
@@ -5873,214 +6275,4 @@ void Line::updateMapped() {
 }
 
 void Line::createAdditinalBuffer() {
-}
-
-
-PickObject::PickObject(): ubo_compute(), inputBufferMemory(nullptr), outputBufferMemory(nullptr) {
-}
-
-void PickObject::draw(VkCommandBuffer _buffer) {
-  if (!is_object_visible)
-    return;
-  vkCmdBindPipeline(_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptor, 0, nullptr);
-  vkCmdDispatch(_buffer, dataSize, 1, 1); // dataSize - количество элементов
-}
-
-void PickObject::initialization() {
-}
-
-void PickObject::updateMapped() {
-}
-
-void PickObject::preparePipeline() {
-  // Создание шейдерного модуля
-  // VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
-  // shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-  // shaderModuleCreateInfo.codeSize = sizeof(computeShaderCode);
-  // shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(computeShaderCode);
-  //
-  // vkCreateShaderModule(device, &shaderModuleCreateInfo, nullptr, &computeShaderModule);
-
-  // Создание layout pipeline
-  VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
-  pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipelineLayoutInfo.setLayoutCount = 1;
-  pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
-
-  vkCreatePipelineLayout(vDevice->logicalDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout);
-
-  // Создание Compute Pipeline
-  VkComputePipelineCreateInfo pipelineInfo = {};
-  pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-  pipelineInfo.stage = shadersStages[0];
-  pipelineInfo.layout = pipelineLayout;
-
-  vkCreateComputePipelines(vDevice->logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline);
-}
-
-void PickObject::prepareCompute() const {
-}
-
-void PickObject::buildComputeCommandBuffer() const {
-}
-
-void PickObject::setDescriptorLayout() {
-  // Создание дескрипторного набора
-  VkDescriptorSetLayoutBinding layoutBinding = {};
-  layoutBinding.binding = 0;
-  layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  layoutBinding.descriptorCount = 1;
-  layoutBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-  VkDescriptorSetLayoutCreateInfo layoutInfo = {};
-  layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  layoutInfo.bindingCount = 1;
-  layoutInfo.pBindings = &layoutBinding;
-
-  vkCreateDescriptorSetLayout(vDevice->logicalDevice, &layoutInfo, nullptr, &descriptorSetLayout);
-}
-
-void PickObject::prepareUniformBuffers() {
-}
-
-void PickObject::loadTexture(VkImageViewType type) {
-}
-
-void PickObject::prepareBuffers() {
-  // Создание буферов
-  VkBufferCreateInfo bufferInfo = {};
-  bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  bufferInfo.size = sizeof(float) * dataSize; // dataSize - размер данных
-  bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-  bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-  vkCreateBuffer(vDevice->logicalDevice, &bufferInfo, nullptr, &inputBuffer.buffer);
-  vkCreateBuffer(vDevice->logicalDevice, &bufferInfo, nullptr, &outputBuffer.buffer);
-
-  // Выделение памяти для буферов
-  VkMemoryRequirements memRequirements;
-  vkGetBufferMemoryRequirements(vDevice->logicalDevice, inputBuffer.buffer, &memRequirements);
-
-  VkMemoryAllocateInfo allocInfo = {};
-  allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  allocInfo.allocationSize = memRequirements.size;
-  allocInfo.memoryTypeIndex = vDevice->findMemoryType(memRequirements.memoryTypeBits,
-                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-  vkAllocateMemory(vDevice->logicalDevice, &allocInfo, nullptr, &inputBufferMemory);
-  vkBindBufferMemory(vDevice->logicalDevice, inputBuffer.buffer, inputBufferMemory, 0);
-
-  vkGetBufferMemoryRequirements(vDevice->logicalDevice, outputBuffer.buffer, &memRequirements);
-  allocInfo.allocationSize = memRequirements.size;
-  allocInfo.memoryTypeIndex = vDevice->findMemoryType(memRequirements.memoryTypeBits,
-                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-  vkAllocateMemory(vDevice->logicalDevice, &allocInfo, nullptr, &outputBufferMemory);
-  vkBindBufferMemory(vDevice->logicalDevice, outputBuffer.buffer, outputBufferMemory, 0);
-}
-
-void PickObject::createDescriptorPool() {
-  VkDescriptorPoolSize poolSize = {};
-  poolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  poolSize.descriptorCount = 1;
-
-  VkDescriptorPoolCreateInfo poolInfo = {};
-  poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  poolInfo.poolSizeCount = 1;
-  poolInfo.pPoolSizes = &poolSize;
-  poolInfo.maxSets = 1;
-
-  vkCreateDescriptorPool(vDevice->logicalDevice, &poolInfo, nullptr, &descriptorPool);
-}
-
-void PickObject::createDescriptorSets() {
-  VkDescriptorSetAllocateInfo allocInfo = {};
-  allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  allocInfo.descriptorPool = descriptorPool;
-  allocInfo.descriptorSetCount = 1;
-  allocInfo.pSetLayouts = &descriptorSetLayout;
-
-  vkAllocateDescriptorSets(vDevice->logicalDevice, &allocInfo, &descriptor);
-
-  VkDescriptorBufferInfo bufferInfo = {};
-  bufferInfo.buffer = inputBuffer.buffer;
-  bufferInfo.offset = 0;
-  bufferInfo.range = sizeof(float) * dataSize;
-
-  VkWriteDescriptorSet descriptorWrite = {};
-  descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  descriptorWrite.dstSet = descriptor;
-  descriptorWrite.dstBinding = 0;
-  descriptorWrite.dstArrayElement = 0;
-  descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  descriptorWrite.descriptorCount = 1;
-  descriptorWrite.pBufferInfo = &bufferInfo;
-
-  vkUpdateDescriptorSets(vDevice->logicalDevice, 1, &descriptorWrite, 0, nullptr);
-}
-
-void PickObject::createAdditinalBuffer() {
-}
-
-void PickObject::acquireBarrier(VkCommandBuffer _buffer) {
-  Object::acquireBarrier(_buffer);
-}
-
-void PickObject::releaseBarrier(VkCommandBuffer _buffer) {
-  Object::releaseBarrier(_buffer);
-}
-
-void PickObject::createSemaphore() {
-}
-
-VkDeviceSize PickObject::getBufferSize() {
-  return sizeof(UniformBufferObject);
-}
-
-uint32_t PickObject::getTexturesSize() {
-  return 0;
-}
-
-viBuffer * PickObject::getBuffer() {
-  return nullptr;
-}
-
-std::vector<uint32_t> * PickObject::getIndices() {
-  return nullptr;
-}
-
-void PickObject::setObjectInfo(pipeline_parameters *_parameters, VkGraphicsPipelineCreateInfo *pipelineInfo) {
-}
-
-void PickObject::update(float frame_time) {
-}
-
-void PickObject::prepare() {
-}
-
-void PickObject::createFramebuffers(VulkanSwapChain *vkSwapChain) {
-}
-
-void PickObject::createRenderPass(VkFormat format) {
-}
-
-void PickObject::createUniformBuffer() {
-}
-
-VkDescriptorImageInfo * PickObject::get_descriptor_image(size_t tex_idx) {
-  return nullptr;
-}
-
-void PickObject::destroy() {
-}
-
-void PickObject::additionalDestroy() {
-  Object::additionalDestroy();
-}
-
-void PickObject::clearComputeBlock() {
-  Object::clearComputeBlock();
 }

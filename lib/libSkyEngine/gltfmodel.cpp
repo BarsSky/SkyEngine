@@ -1333,6 +1333,9 @@ void vkglTF::Model::loadFromFile(std::string filename, VulkanDevice *device, VkQ
   size_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
   indices.count = static_cast<uint32_t>(indexBuffer.size());
   vertices.count = static_cast<uint32_t>(vertexBuffer.size());
+  buff_indexBuffer = indexBuffer;
+  for (auto position_vec: vertexBuffer)
+    buff_vertexBuffer.emplace_back(position_vec.pos.x, position_vec.pos.y);
 
   assert((vertexBufferSize > 0) && (indexBufferSize > 0));
 
@@ -1492,7 +1495,7 @@ void vkglTF::Model::drawNode(Node *node, VkCommandBuffer commandBuffer, uint32_t
       vkCmdBindDescriptorSets(commandBuffer,
                               VK_PIPELINE_BIND_POINT_GRAPHICS,
                               pipelineLayout,
-                              0,
+                              1,
                               1,
                               &node->mesh->uniformBuffer.descriptorSet,
                               0,
@@ -1513,7 +1516,7 @@ void vkglTF::Model::drawNode(Node *node, VkCommandBuffer commandBuffer, uint32_t
       }
       if (!skip) {
         if (renderFlags & RenderFlags::BindImages && (material.descriptorSet != VK_NULL_HANDLE)) {
-          vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, bindImageSet, 1,
+          vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, bindImageSet+1, 1,
                                   &material.descriptorSet, 0, nullptr);
         }
         vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
@@ -1521,7 +1524,7 @@ void vkglTF::Model::drawNode(Node *node, VkCommandBuffer commandBuffer, uint32_t
     }
   }
   for (auto &child: node->children) {
-    drawNode(child, commandBuffer, renderFlags,pipelineLayout);
+    drawNode(child, commandBuffer, renderFlags, pipelineLayout);
   }
 }
 
@@ -1674,4 +1677,12 @@ void vkglTF::Model::prepareNodeDescriptor(vkglTF::Node *node, VkDescriptorSetLay
   for (auto &child: node->children) {
     prepareNodeDescriptor(child, descriptorSetLayout);
   }
+}
+
+std::vector<uint32_t> vkglTF::Model::getIndexBuffer() {
+  return buff_indexBuffer;
+}
+
+std::vector<glm::vec2> vkglTF::Model::getVertexBuffer() {
+  return buff_vertexBuffer;
 }

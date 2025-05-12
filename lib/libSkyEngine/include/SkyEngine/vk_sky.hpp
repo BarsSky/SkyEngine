@@ -48,8 +48,16 @@
 #if (__cplusplus > 201402L)
 #include <filesystem>
 #else
-
+#ifdef __linux__
 #include <experimental/filesystem>
+#else
+#if(_MSVC_LANG < 201402L)
+#include <experimental/filesystem>
+#else
+#include <filesystem>
+#endif
+#endif
+
 
 #endif
 
@@ -169,6 +177,8 @@ namespace vk_sky {
 
     // function for update objects buffers value
     virtual void updateUniformBuffer();
+
+    void updateCommandBuffer();
 
     /** @brief (Pure virtual) Render function to be implemented by the sample application */
     virtual void render() = 0;

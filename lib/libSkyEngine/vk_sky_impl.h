@@ -159,6 +159,7 @@ public:
   bool ready_to_close() const;
 
   void visible_ui(bool flag);
+
   /**
   *
   */
@@ -177,8 +178,12 @@ public:
 
   bool is_ui_enable() const;
 
-
 private:
+  /**
+   * @brief update command buffer
+   */
+  void updateCommandBuffer();
+
   /**
    * @brief Create a Command Pool
    *
@@ -245,7 +250,7 @@ private:
   /**
    *  @brief special function for make another command logic for compute
    */
-  void createAdditinalBuffer();
+  void createAdditinalBuffer() const;
 
   /**
    * @brief create memory barrier
@@ -257,6 +262,11 @@ private:
    * @param release memory barrier
    */
   void releaseBarrier(VkCommandBuffer _buffer);
+
+  /**
+   * @brief read data if return from model shaders
+   */
+  void readSharedData();
 
   /**
    *
@@ -272,7 +282,8 @@ private:
   void drawUI(VkCommandBuffer commandBuffer);
 
 protected:
-  std::vector<Object *> std_objects, trn_objects, all_objects,compute_objects; ///!< Буфферы для хранения разных по типу объектов
+  std::vector<Object *> std_objects, trn_objects, all_objects, compute_objects;
+  ///!< вектора для хранения разных по типу объектов
   VulkanSwapChain VkSwapChain;
   VulkanDevice vDevice;
   Screen screen;

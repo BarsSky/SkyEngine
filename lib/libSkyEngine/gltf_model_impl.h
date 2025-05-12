@@ -106,9 +106,30 @@ public:
     return scene->materials.at(index).doubleSided;
   }
 
+  size_t get_vertex_size() {
+    return scene->vertices.count;
+  }
+
+  std::vector<uint32_t> getIndexBuffer() const {
+    return scene->getIndexBuffer();
+  }
+
+  std::vector<glm::vec2> getVertexBuffer() const {
+    return scene->getVertexBuffer();
+  }
+
+  VkBuffer* get_vertex_buffer() {
+    return &scene->vertices.buffer;
+  }
+
+  VkDeviceMemory* get_vertex_memory() {
+    return &scene->vertices.memory;
+  }
+
   void updateUbo(void* data, size_t mesh_id) const {
     auto ct_data = static_cast<vkglTF::Mesh::UniformBufferObject*>(data);
     if (scene->linearNodes.at(mesh_id)->mesh) {
+      scene->linearNodes.at(mesh_id)->mesh->uniformBase.unique_id = ct_data->unique_id;
       scene->linearNodes.at(mesh_id)->mesh->uniformBase.matrix = ct_data->model;
       scene->linearNodes.at(mesh_id)->mesh->uniformBase.proj = ct_data->proj;
       scene->linearNodes.at(mesh_id)->mesh->uniformBase.view = ct_data->view;

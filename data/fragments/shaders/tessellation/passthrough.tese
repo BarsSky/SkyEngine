@@ -4,6 +4,7 @@ layout (triangles, fractional_odd_spacing, cw) in;
 
 layout (binding = 1) uniform UBO 
 {
+	uvec4 unique_id;
 	mat4 projection;
 	mat4 model;
 	float tessAlpha;

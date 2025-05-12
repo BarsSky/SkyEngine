@@ -215,6 +215,7 @@ static void camera_view_matrix(Camera *_cam, float *_out_matrix);
 #ifdef CAMERA_IMPLEMENTATION
 
 static Camera camera_init() {
+#ifdef __linux__
   Camera cam = {
       .target_position = cm_init_vec3(0.0f, 0.0f, 0.0f),
       .target_distance = 0.0f,
@@ -231,7 +232,24 @@ static Camera camera_init() {
       .minRoll = 0.0f,
       .maxRoll = 0.0f,
   };
+#else
+    Camera cam = {
+      cm_init_vec3(0.0f, 0.0f, 0.0f),
+      0.0f,
+      cm_init_quat(0.0f, 0.0f, 0.0, 0.0f),
+      CAMERA_MODE_FREE,
 
+      cm_init_vec3(0.0f, 0.0f, 0.0f),
+      cm_init_vec3(0.0f, 0.0f, 0.0f),
+
+      0.0f,
+      0.0f,
+      0.0f,
+      0.0f,
+      0.0f,
+      0.0f,
+    };
+#endif
   return cam;
 };
 

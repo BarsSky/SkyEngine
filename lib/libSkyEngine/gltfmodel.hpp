@@ -133,6 +133,8 @@ namespace vkglTF
 		} uniformBuffer;
 
 		struct UniformBase {
+			//Set common fields
+			glm::uvec4 unique_id{0,0,0,0};
 			glm::mat4 matrix;
 			glm::mat4 view;
 			glm::mat4 proj;
@@ -145,8 +147,8 @@ namespace vkglTF
 			float jointcount{ 0 };
 		} uniformBlock;
 
-		class uniformBuffer {
-
+		struct uniformBuffer {
+			glm::uvec4 unique_id{0,0,0,0};
 		};
 
 		/**
@@ -327,5 +329,10 @@ namespace vkglTF
 		Node* findNode(Node* parent, uint32_t index);
 		Node* nodeFromIndex(uint32_t index);
 		void prepareNodeDescriptor(vkglTF::Node* node, VkDescriptorSetLayout descriptorSetLayout);
+		std::vector<uint32_t> getIndexBuffer();
+		std::vector<glm::vec2> getVertexBuffer();
+	private:
+		std::vector<uint32_t> buff_indexBuffer;
+		std::vector<glm::vec2> buff_vertexBuffer;
 	};
 }

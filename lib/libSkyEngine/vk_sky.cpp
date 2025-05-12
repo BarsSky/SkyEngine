@@ -128,6 +128,10 @@ void VKSky::drawFrame() {
 void VKSky::updateUniformBuffer() {
 }
 
+void VKSky::updateCommandBuffer() {
+    u_ptr_->viewUpdated = true;
+}
+
 Object *VKSky::createObject(const pipelineObject &pipeline, vk_sky::ObjectFlags flag) {
   return u_ptr_->createObject(pipeline, flag);
 }

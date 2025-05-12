@@ -19,6 +19,10 @@ set(_PRIVATE_INCLUDE_DIR # директории указанные в этой �
     ${CMAKE_BINARY_DIR}/include
 )
 
+#if ((MSVC) AND (MSVC_VERSION GREATER_EQUAL 1914))
+#    target_compile_options(stxxl INTERFACE "/Zc:__cplusplus")
+#endif()
+
 #Препроцессоры устанавливаемые по умолчанию
 set(_PRIVATE_DEFINITIONS
     #
@@ -27,6 +31,10 @@ set(_PRIVATE_DEFINITIONS
     ELPP_NO_DEFAULT_LOG_FILE
     ELPP_THREAD_SAFE
 )
+
+if (MSVC)
+    list(APPEND _PRIVATE_DEFINITIONS _MSVC_LANG=201103L)
+endif ()
 
 # создаёт проект для исполняемого файла
 helper_add_executable(${_TARGET_NAME}
