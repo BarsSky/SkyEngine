@@ -22,10 +22,11 @@
 
 #include <utility>
 #include <SkyEngine/vk_sky_texture.hpp>
+#include <SkyEngine/export_import_magick.h>
 
 #define DEPTH_ARRAY_SCALE 4096 // TODO: make variable for change check depth
 
-struct PM_IO_VULKAN_EXPORT pipeline_parameters {
+struct LIBSKYENGINE_EXPORT pipeline_parameters {
   /**
    * @brief Vulkan graphics pipeline parameters
    *
@@ -46,7 +47,7 @@ const int MAX_FRAMES_IN_FLIGHT = 1;
 /**
  * @brief
  */
-struct PM_IO_VULKAN_EXPORT viBuffer {
+struct LIBSKYENGINE_EXPORT viBuffer {
   VkBuffer vert;
   VkBuffer ind;
 };
@@ -66,7 +67,7 @@ enum class ObjectRenderFlags {
 /**
  * @brief base struct for all object with virtual functions
  */
-struct PM_IO_VULKAN_EXPORT Object {
+struct LIBSKYENGINE_EXPORT Object {
   explicit Object();
 
   /**

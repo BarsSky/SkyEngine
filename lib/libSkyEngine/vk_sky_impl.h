@@ -50,7 +50,7 @@ private:
   VkDevice *device;
 };
 
-class PM_IO_VULKAN_EXPORT VKSky::CImpl
+class LIBSKYENGINE_EXPORT VKSky::CImpl
 #ifdef QT_LIB_ENABLE
     : public QObject
 {

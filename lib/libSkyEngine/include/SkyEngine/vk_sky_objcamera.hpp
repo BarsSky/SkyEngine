@@ -23,8 +23,9 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
+#include <SkyEngine/export_import_magick.h>
 
-class ObjCamera {
+class LIBSKYENGINE_EXPORT ObjCamera {
 private:
 
   glm::vec3 up_vector = {0, -1, 0};

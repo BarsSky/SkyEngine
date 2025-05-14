@@ -247,7 +247,7 @@ enum class ParticleComponent {
 /**
  * @brief Particle struct create particle objects
  */
-struct /*PM_IO_VULKAN_EXPORT*/ Particle {
+struct Particle {
   glm::vec4 pos;
   glm::vec4 color;
   float alpha;
@@ -308,7 +308,7 @@ enum class model_type : uint8_t {
 /**
  * @brief Model class
  */
-struct PM_IO_VULKAN_EXPORT Model : public Object {
+struct LIBSKYENGINE_EXPORT Model : public Object {
   UniformBufferObject object_ubo{};
 
   Vertex vertex{};
@@ -325,7 +325,7 @@ struct PM_IO_VULKAN_EXPORT Model : public Object {
 
   void updateMapped() override;
 
-  explicit Model(std::string _path, model_type _type = model_type::from_obj_file);;
+  explicit Model(std::string _path, model_type _type = model_type::from_obj_file);
 
   void draw(VkCommandBuffer model_buffer) override;
 
@@ -423,7 +423,7 @@ private:
 #define M_PI 3.141592265358979323864
 #endif
 
-struct PM_IO_VULKAN_EXPORT Partical_Model_CPU : public Object {
+struct LIBSKYENGINE_EXPORT Partical_Model_CPU : public Object {
   UniformBufferParticle particl_ubo;
 
   Particle particle{};
@@ -548,7 +548,7 @@ struct PM_IO_VULKAN_EXPORT Partical_Model_CPU : public Object {
 
 // Resources for the compute part of the example
 
-struct PM_IO_VULKAN_EXPORT Partical_Model_GPU final : public Object {
+struct LIBSKYENGINE_EXPORT Partical_Model_GPU final : public Object {
   struct {
     VkPipelineVertexInputStateCreateInfo inputState;
     std::vector<VkVertexInputBindingDescription> bindingDescriptions;
@@ -677,7 +677,7 @@ struct PM_IO_VULKAN_EXPORT Partical_Model_GPU final : public Object {
 #define PARTICLE_COUNT 1024*4
 // Subpass Object
 
-struct PM_IO_VULKAN_EXPORT Transparent_Model final : public Model {
+struct LIBSKYENGINE_EXPORT Transparent_Model final : public Model {
   UniformBufferTransparent trn_ubo{};
 
   Transparent_Model(std::string _path);
@@ -695,7 +695,7 @@ struct PM_IO_VULKAN_EXPORT Transparent_Model final : public Model {
   void createAdditinalBuffer() override;
 };
 
-struct PM_IO_VULKAN_EXPORT Terrain_Model final : public Model {
+struct LIBSKYENGINE_EXPORT Terrain_Model final : public Model {
   UniformBufferTessellation tesselation_ubo;
 
   explicit Terrain_Model(std::string _path,
@@ -721,7 +721,7 @@ struct PM_IO_VULKAN_EXPORT Terrain_Model final : public Model {
   void createAdditinalBuffer() override;
 };
 
-struct PM_IO_VULKAN_EXPORT GLTF_Model : public Object {
+struct LIBSKYENGINE_EXPORT GLTF_Model : public Object {
   UniformBufferObject gltf_ubo{};
 
   managePushConstant manage_constant;
@@ -821,7 +821,7 @@ protected:
   std::unique_ptr<GLTF_CImpl> u_ptr_model;
 };
 
-struct PM_IO_VULKAN_EXPORT GLTF_Model_Animate final : public Object {
+struct LIBSKYENGINE_EXPORT GLTF_Model_Animate final : public Object {
   UniformBufferAnimate gltf_animate_ubo;
 
   struct DescriptorSetLayouts {
@@ -888,7 +888,7 @@ protected:
   std::unique_ptr<AnimGLTF_Model_Impl> u_ptr_model;
 };
 
-struct PM_IO_VULKAN_EXPORT GLTF_SkyBox final : public GLTF_Model {
+struct LIBSKYENGINE_EXPORT GLTF_SkyBox final : public GLTF_Model {
 #define FB_DIM 256
 #define FB_COLOR_FORMAT VK_FORMAT_R8G8B8A8_UNORM
 
@@ -933,7 +933,7 @@ struct PM_IO_VULKAN_EXPORT GLTF_SkyBox final : public GLTF_Model {
 #define TEXTOVERLAY_MAX_CHAR_COUNT 2048
 
 //TODO: Make universal TEXT OBJECT as PARENT for ANOTHER like OVERLAY OR TEXT ON BOARD
-struct PM_IO_VULKAN_EXPORT TextOverlay : public Object {
+struct LIBSKYENGINE_EXPORT TextOverlay : public Object {
 
   UniformBuffer2D text_ubo;
 
@@ -1044,7 +1044,7 @@ public:
   void createAdditinalBuffer() override;
 };
 
-struct PM_IO_VULKAN_EXPORT Model3D final : public Object {
+struct LIBSKYENGINE_EXPORT Model3D final : public Object {
   UniformBufferObject model3d_ubo{};
   Vertex vertex{};
   enma::Buffer vertexBuffer;
@@ -1123,7 +1123,7 @@ struct PM_IO_VULKAN_EXPORT Model3D final : public Object {
   void createAdditinalBuffer() override;
 };
 
-struct PM_IO_VULKAN_EXPORT Model2D final : public Object {
+struct LIBSKYENGINE_EXPORT Model2D final : public Object {
   UniformBuffer2D model2d_ubo{};
 
   TextOverlay *text;
@@ -1247,7 +1247,7 @@ struct PM_IO_VULKAN_EXPORT Model2D final : public Object {
   void createAdditinalBuffer() override;
 };
 
-struct PM_IO_VULKAN_EXPORT Line : public Object {
+struct LIBSKYENGINE_EXPORT Line : public Object {
   UniformBufferLine line_ubo{};
 
   struct PushConstantTo {

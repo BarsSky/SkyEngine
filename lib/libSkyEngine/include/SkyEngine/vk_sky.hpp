@@ -101,7 +101,7 @@ namespace vk_sky {
     LOAD_IN_THREAD = 1
   };
 
-  class VKSky
+  class LIBSKYENGINE_EXPORT VKSky
 #ifdef QT_LIB_ENABLE
         : public QObject
     {

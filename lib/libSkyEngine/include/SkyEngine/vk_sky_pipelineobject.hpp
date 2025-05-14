@@ -15,7 +15,7 @@
  */
 
 
-enum class ePipelineObjectType : unsigned int {
+enum class LIBSKYENGINE_EXPORT ePipelineObjectType : unsigned int {
     OBJECT_3D,
     OBJECT_2D,
     LINE,
@@ -35,7 +35,7 @@ enum class ePipelineObjectType : unsigned int {
  *  Класс помощник для более быстрого формирования объектов
  */
 // TODO: Закрыть данный класс от пользователя, реализовывать формирование через штатный открытый API класса Magick
-struct pipelineObject {
+struct LIBSKYENGINE_EXPORT pipelineObject {
     explicit pipelineObject(ePipelineObjectType type, std::vector<Vertex> vertices = std::vector<Vertex>(),
                    std::vector<uint32_t> indices = std::vector<uint32_t>());
 

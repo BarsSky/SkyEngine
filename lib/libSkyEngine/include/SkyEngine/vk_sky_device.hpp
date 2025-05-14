@@ -34,7 +34,7 @@ struct SwapChainSupportDetails
     std::vector<VkPresentModeKHR> presentModes;
 };
 
-class PM_IO_VULKAN_EXPORT VulkanDevice
+class LIBSKYENGINE_EXPORT VulkanDevice
 {
 public:
     SwapChainSupportDetails swapChainSupport;

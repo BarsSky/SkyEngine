@@ -9,10 +9,17 @@ jobs:
     name: build
     runs-on: self-hosted
     steps:
-    - name: checkout and build
-      uses: actions/checkout@v2
+      - name: checkout and build
+        uses: actions/checkout@v2
 
-    - name: cmake build for MINGW
-      run: |
-         cmake -G "MinGW Makefiles" -B build .
-         cmake --build build --target install
+      - name: cmake build for MINGW
+        run: |
+          cmake --fresh
+          cmake -G "MinGW Makefiles" -B build .
+          cmake --build build --target install
+
+      - name: cmake build for MSVC
+        run: |
+          cmake --fresh
+          cmake -G "Visual Studio 17 2022" -A x64 -B build .
+          cmake --build build --target install
