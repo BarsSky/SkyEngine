@@ -19,8 +19,7 @@ public:
   enum {
     sun = 0,
     earth = 1,
-    moon = 2,
-    obj_102e6 = 3
+    moon = 2
   };
 
   //структура параметров объектов
