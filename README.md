@@ -1,3 +1,5 @@
+[![sky engine build](https://github.com/BarsSky/SkyEngine/actions/workflows/.github-ci.yaml/badge.svg?branch=master)](https://github.com/BarsSky/SkyEngine/actions/workflows/.github-ci.yaml)
+
 # Твердь Машина
 
 ## Описание
