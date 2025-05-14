@@ -14,7 +14,6 @@ jobs:
 
       - name: cmake build for MINGW
         run: |
-          cmake --fresh
           cmake -G "MinGW Makefiles" -B build .
           cmake --build build --target install
 
