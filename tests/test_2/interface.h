@@ -10,35 +10,52 @@
 #include <vector>
 #include <SkyEngine/vk_sky.hpp>
 
-
 using namespace vk_sky;
 
-class Interface : public VKSky {
+
+struct GenerationTextureBuffer {
+  ~GenerationTextureBuffer() {
+    if (buffer != nullptr)
+      delete [] buffer;
+    buffer = nullptr;
+  }
+
+  uint8_t *getBuffer() const {
+    return buffer;
+  }
+
+  uint8_t *buffer = nullptr;
+};
+
+class Interface : public VKSky
+{
 public:
-  //структура типа объектов
-  enum {
+  // структура типа объектов
+  enum
+  {
     sun = 0,
     earth = 1,
     moon = 2
   };
 
-  //структура параметров объектов
-  struct objParams {
+  // структура параметров объектов
+  struct objParams
+  {
     int type;
-    glm::vec4 pos; //позиция
-    glm::vec3 vct_vel; //вектор движения
+    glm::vec4 pos;     // позиция
+    glm::vec3 vct_vel; // вектор движения
   };
 
   std::vector<objParams> elements;
   uint64_t TimeMark = 0;
 
   // Структура для отслеживания нажатий кнопок мыши
-  struct {
+  struct
+  {
     bool left = false;
     bool right = false;
     bool middle = false;
   } mouseButtons;
-
 
   Interface();
 
@@ -84,27 +101,26 @@ public:
   ///
 private:
   void magickCursor(double x_pos, double y_pos) override;
-  //base directories
+  // base directories
   const std::string _model_dir = MODELS_DIRECTORY;
   const std::string _shader_dir = SHADER_DIRECTORY;
-  //итераторы объектов по отдельности
+  // итераторы объектов по отдельности
   std::vector<uint64_t> iter_draw;
 
-  //количество объектов
+  // количество объектов
   uint64_t draw_size = 0;
 
-  //light options and obj positioning
+  // light options and obj positioning
   glm::vec4 sun_position;
   glm::vec3 point;
   glm::vec4 *currentTarget_obj;
   int current_camera_position = -1;
-  //time
+  // time
   std::chrono::time_point<std::chrono::system_clock> startTime;
   std::chrono::time_point<std::chrono::system_clock> currentTime;
   float time = 0;
 
   bool ready_to_draw = false;
-
 
   void clear_objects();
 
@@ -123,7 +139,8 @@ private:
   int trash_objects = 9;
   int active_search = -1;
 
-  static bool connect() {
+  static bool connect()
+  {
     return false;
   }
 
@@ -131,21 +148,42 @@ private:
    *  Обзекты интерфейса
    *
    */
-  //базовые объекты
+  // базовые объекты
   Model *Earth = nullptr;
   Model *Moon = nullptr;
   Model *Sun = nullptr;
-  TextOverlay* text_info= nullptr;
+  TextOverlay *text_info = nullptr;
   GLTF_Model *modelAnimate = nullptr;
   Partical_Model_GPU *gpu_particle = nullptr;
   Partical_Model_GPU *gpu_particle1 = nullptr;
-  GLTF_Model * SpaceShip = nullptr;
-  GLTF_Model *Axis_X = nullptr, *Axis_Y = nullptr, *Axis_Z = nullptr, *Axis_X2 = nullptr, *Axis_Y2 = nullptr, *Axis_Z2 =
-          nullptr;
+  GLTF_Model *SpaceShip = nullptr;
+  GLTF_Model *Axis_X = nullptr, *Axis_Y = nullptr, *Axis_Z = nullptr, *Axis_X2 = nullptr, *Axis_Y2 = nullptr, *Axis_Z2 = nullptr;
   Transparent_Model *Atmosphere = nullptr;
   GLTF_SkyBox *SkyBox = nullptr;
+  /// Текст и формы
+  UIForm *form = nullptr;
+  TextForm *textForm = nullptr;
+  TextForm *textFormS = nullptr;
+  TextForm *textFormS2 = nullptr;
+  TextForm *textForm2 = nullptr;
+  TextForm *textForm3 = nullptr;
+  TextForm *textForm4 = nullptr;
+  TextForm *textForm5 = nullptr;
 
-  //свалка моделируемых объектов
+  ShapeForm *shapeForm = nullptr;
+  ShapeForm *shapeFormAll = nullptr;
+  ShapeForm *shapeFormS = nullptr;
+  ShapeForm *shapeFormS2 = nullptr;
+  ShapeForm *shapeForm2 = nullptr;
+  ShapeForm *shapeForm3 = nullptr;
+  ShapeForm *shapeForm4 = nullptr;
+  ShapeForm *shapeForm5 = nullptr;
+  /// Текстура для форм
+    uint32_t texture_size{};
+  GenerationTextureBuffer *texture_buffer_current = nullptr;
+  GenerationTextureBuffer *texture_buffer_next = nullptr;
+  GenerationTextureBuffer texture_extent_buffer[2];
+  // свалка моделируемых объектов
   Model *TestObject = nullptr;
   Partical_Model_CPU *Flameboost = nullptr;
 
@@ -166,6 +204,6 @@ private:
   glm::vec2 mouse_point;
 };
 
-//#include "moc_Interface.cpp"
+// #include "moc_Interface.cpp"
 
-#endif //ZUR_Interface_H
+#endif // ZUR_Interface_H

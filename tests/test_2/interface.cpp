@@ -99,6 +99,81 @@ void Interface::PrepareAssets() {
   text_info = reinterpret_cast<TextOverlay *>(createObject(pipelineObject(ePipelineObjectType::TEXT_OVERLAY)));
   text_info->load_object_shaders({SHADER_DIRECTORY"/text.vert.spv",SHADER_DIRECTORY"/text.frag.spv"});
   text_info->updateFrameSize(getScreen().uWidth, getScreen().uHeight);
+
+
+    texture_size = 320 * 256 * 4;
+  texture_extent_buffer[0].buffer = new uint8_t[texture_size];
+  texture_buffer_current = &texture_extent_buffer[0];
+  texture_extent_buffer[1].buffer = new uint8_t[texture_size];
+  texture_buffer_next = &texture_extent_buffer[1];
+
+  for (int wp = 0; wp < texture_size; wp += 4) {
+    texture_buffer_current->buffer[wp] = static_cast<uint8_t>(101);
+    texture_buffer_current->buffer[wp + 1] = static_cast<uint8_t>(101);
+    texture_buffer_current->buffer[wp + 2] = static_cast<uint8_t>(201);
+    texture_buffer_current->buffer[wp + 3] = static_cast<uint8_t>(150);
+  }
+
+  form = new UIForm();
+  form->set_draw_str_point(200, 200);
+
+  shapeFormAll = reinterpret_cast<ShapeForm *>(createObject(pipelineObject(ePipelineObjectType::SHAPE_FORM)));
+  shapeFormAll->init(form);
+  shapeFormAll->texture_data = texture_buffer_current->buffer;
+  shapeFormAll->image.texture_depth = 1;
+  shapeFormAll->image.texture_byte_count = 4;
+  shapeFormAll->image.texture_width = 320;
+  shapeFormAll->image.texture_height = 256;
+  shapeFormAll->load_object_shaders({SHADER_DIRECTORY"/shape.vert.spv",SHADER_DIRECTORY"/shape.frag.spv"});
+
+
+  textForm = reinterpret_cast<TextForm *>(createObject(pipelineObject(ePipelineObjectType::TEXT_FORM)));
+  textForm->init(form);
+  textForm->load_object_shaders({SHADER_DIRECTORY"/text.vert.spv",SHADER_DIRECTORY"/text.frag.spv"});
+
+
+  shapeForm = reinterpret_cast<ShapeForm *>(createObject(pipelineObject(ePipelineObjectType::SHAPE_FORM)));
+  shapeForm->init(textForm);
+  shapeForm->texture_data = texture_buffer_current->buffer;
+  shapeForm->image.texture_depth = 1;
+  shapeForm->image.texture_byte_count = 4;
+  shapeForm->image.texture_width = 320;
+  shapeForm->image.texture_height = 256;
+  shapeForm->load_object_shaders({SHADER_DIRECTORY"/shape.vert.spv",SHADER_DIRECTORY"/shape.frag.spv"});
+
+  textForm2 = reinterpret_cast<TextForm *>(createObject(pipelineObject(ePipelineObjectType::TEXT_FORM)));
+  textForm2->init(textForm);
+  textForm2->load_object_shaders({SHADER_DIRECTORY"/text.vert.spv",SHADER_DIRECTORY"/text.frag.spv"});
+
+  textForm3 = reinterpret_cast<TextForm *>(createObject(pipelineObject(ePipelineObjectType::TEXT_FORM)));
+  textForm3->init(textForm2);
+  textForm3->load_object_shaders({SHADER_DIRECTORY"/text.vert.spv",SHADER_DIRECTORY"/text.frag.spv"});
+
+  textForm5 = reinterpret_cast<TextForm *>(createObject(pipelineObject(ePipelineObjectType::TEXT_FORM)));
+  textForm5->init(textForm2);
+  textForm5->load_object_shaders({SHADER_DIRECTORY"/text.vert.spv",SHADER_DIRECTORY"/text.frag.spv"});
+
+  textForm4 = reinterpret_cast<TextForm *>(createObject(pipelineObject(ePipelineObjectType::TEXT_FORM)));
+  textForm4->init(textForm3);
+  textForm4->load_object_shaders({SHADER_DIRECTORY"/text.vert.spv",SHADER_DIRECTORY"/text.frag.spv"});
+
+  shapeForm3 = reinterpret_cast<ShapeForm *>(createObject(pipelineObject(ePipelineObjectType::SHAPE_FORM)));
+  shapeForm3->init(textForm3);
+  shapeForm3->texture_data = texture_buffer_current->buffer;
+  shapeForm3->image.texture_depth = 1;
+  shapeForm3->image.texture_byte_count = 4;
+  shapeForm3->image.texture_width = 320;
+  shapeForm3->image.texture_height = 256;
+  shapeForm3->load_object_shaders({SHADER_DIRECTORY"/shape.vert.spv",SHADER_DIRECTORY"/shape.frag.spv"});
+
+
+  textFormS = reinterpret_cast<TextForm *>(createObject(pipelineObject(ePipelineObjectType::TEXT_FORM)));
+  textFormS->init(form);
+  textFormS->load_object_shaders({SHADER_DIRECTORY"/text.vert.spv",SHADER_DIRECTORY"/text.frag.spv"});
+
+  textFormS2 = reinterpret_cast<TextForm *>(createObject(pipelineObject(ePipelineObjectType::TEXT_FORM)));
+  textFormS2->init(form);
+  textFormS2->load_object_shaders({SHADER_DIRECTORY"/text.vert.spv",SHADER_DIRECTORY"/text.frag.spv"});
 }
 
 void Interface::PrepareBaseObjects() {
@@ -168,45 +243,7 @@ void Interface::PrepareBaseObjects() {
 }
 
 void Interface::clear_objects() {
-  //    std::unique_lock<std::mutex> lk(mute);
-  //    wait_prepare.wait(lk, [this]() { return prepared; });
-  // TODO:Make more safe integrate in entropyengine thread control functions
-  //    while (!prepared)
-  //        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-  //    prepared = false;
-
-  //    if (draw_objects.empty())
-  //        return;
-  ////        size_t size = draw_objects.size();
-  //    for (auto draw_object: draw_objects) {
-  //
-  //        draw_object->cleanObjectSwapChain();
-  //
-  //        vkDestroyPipeline(vDevice.logicalDevice, draw_object->pipeline, nullptr);
-  //        vkDestroyPipelineLayout(vDevice.logicalDevice, draw_object->pipelineLayout, nullptr);
-  //        vkDestroyRenderPass(vDevice.logicalDevice, draw_object->renderPass, nullptr);
-  //
-  //        draw_object->destroyShaderModules();
-  //        draw_object->uniformObjectBuffer.destroy();
-  //
-  //        vkDestroyDescriptorPool(vDevice.logicalDevice, draw_object->descriptorPool, nullptr);
-  //
-  //        vkDestroyDescriptorSetLayout(vDevice.logicalDevice,
-  //                                     draw_object->get_descriptor_set_layout(), nullptr);
-  //
-  //        RemoveObject(draw_object);
-  //        delete draw_object;
-  //    }
-  ////    prepared = true;
-  //
-  //    draw_objects.clear();
-  //
-  //    if (!elements.empty()) {
-  //        for (auto &element: elements)
-  //            delete element;
-  //        elements.clear();
-  //    }
-  //    lk.unlock();
+  
 }
 
 void Interface::updateUniformBuffer() {
@@ -336,6 +373,88 @@ void Interface::updateUniformBuffer() {
     //timer_dog-=10;
     iter_dog++;
   }
+
+textForm->updateScale(2.0);
+  textForm->updateFrameSize(getScreen().uWidth, getScreen().uHeight);
+  textForm->beginTextUpdate();
+  textForm->addText("New text ui check", TextForm::alignLeft);
+  textForm->endTextUpdate();
+
+  textForm2->setAlignRule(UIForm::AlignDown);
+  textForm2->updateScale(2.0);
+  textForm2->updateFrameSize(getScreen().uWidth, getScreen().uHeight);
+  textForm2->beginTextUpdate();
+  textForm2->addText("Second line", TextForm::alignLeft);
+  textForm2->endTextUpdate();
+
+  textForm3->updateScale(2.0);
+  textForm3->updateFrameSize(getScreen().uWidth, getScreen().uHeight);
+  textForm3->beginTextUpdate();
+  textForm3->addText("Third line", TextForm::alignLeft);
+  textForm3->endTextUpdate();
+
+  textForm4->setAlignRule(UIForm::AlignDown);
+  textForm4->updateScale(2.0);
+  textForm4->updateFrameSize(getScreen().uWidth, getScreen().uHeight);
+  textForm4->beginTextUpdate();
+  textForm4->addText("Fourth line", TextForm::alignLeft);
+  textForm4->endTextUpdate();
+
+  textForm5->setAlignRule(UIForm::AlignNext);
+  textForm5->updateScale(2.0);
+  textForm5->updateFrameSize(getScreen().uWidth, getScreen().uHeight);
+  textForm5->beginTextUpdate();
+  textForm5->addText("Five line", TextForm::alignLeft);
+  textForm5->endTextUpdate();
+
+  textFormS->updateScale(2.0);
+  textFormS->updateFrameSize(getScreen().uWidth, getScreen().uHeight);
+  textFormS->beginTextUpdate();
+  textFormS->addText("We need Align", TextForm::alignLeft);
+  textFormS->endTextUpdate();
+
+  textFormS2->setAlignRule(UIForm::AlignDown);
+  textFormS2->updateScale(2.0);
+  textFormS2->updateFrameSize(getScreen().uWidth, getScreen().uHeight);
+  textFormS2->beginTextUpdate();
+  textFormS2->addText("We need Align 2", TextForm::alignLeft);
+  textFormS2->endTextUpdate();
+
+
+  //form->make_update();
+
+  for (int wp = 0; wp < texture_size; wp += 4) {
+      texture_buffer_current->buffer[wp] = static_cast<uint8_t>(101);
+      texture_buffer_current->buffer[wp + 1] = static_cast<uint8_t>(101);
+      texture_buffer_current->buffer[wp + 2] = static_cast<uint8_t>(201);
+      texture_buffer_current->buffer[wp + 3] = static_cast<uint8_t>(165);
+  }
+
+  shapeForm->recreate_vertices();
+  shapeForm->updateTexture(texture_buffer_current->buffer);
+
+
+  for (int wp = 0; wp < texture_size; wp += 4) {
+    texture_buffer_current->buffer[wp] = static_cast<uint8_t>(10);
+    texture_buffer_current->buffer[wp + 1] = static_cast<uint8_t>(10);
+    texture_buffer_current->buffer[wp + 2] = static_cast<uint8_t>(251);
+    texture_buffer_current->buffer[wp + 3] = static_cast<uint8_t>(130);
+  }
+
+  shapeForm3->recreate_vertices();
+  shapeForm3->updateTexture(texture_buffer_current->buffer);
+
+
+  for (int wp = 0; wp < texture_size; wp += 4) {
+    texture_buffer_current->buffer[wp] = static_cast<uint8_t>(191);
+    texture_buffer_current->buffer[wp + 1] = static_cast<uint8_t>(181);
+    texture_buffer_current->buffer[wp + 2] = static_cast<uint8_t>(201);
+    texture_buffer_current->buffer[wp + 3] = static_cast<uint8_t>(145);
+  }
+
+  shapeFormAll->recreate_vertices();
+  shapeFormAll->updateTexture(texture_buffer_current->buffer);
+  
   recreateCommandBuffer();
 }
 

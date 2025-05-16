@@ -61,5 +61,10 @@ $VK_VULKAN_BIN/glslc text/text.frag -o comp/text.frag.spv
 # text plate
 $VK_VULKAN_BIN/glslc plate_text/plate_text.vert -o comp/plate_text.vert.spv
 $VK_VULKAN_BIN/glslc plate_text/plate_text.frag -o comp/plate_text.frag.spv
+# shape form
+$VK_VULKAN_BIN/glslc shape/shape.vert -o comp/shape.vert.spv
+$VK_VULKAN_BIN/glslc shape/shape.frag -o comp/shape.frag.spv
+echo "Press [Enter] key to continue..."
+read
 cp -r ./comp/. ../../shaders
 echo "Done"

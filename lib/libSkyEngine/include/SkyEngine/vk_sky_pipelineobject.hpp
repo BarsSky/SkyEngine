@@ -14,8 +14,8 @@
  * or configure scenes
  */
 
-
-enum class LIBSKYENGINE_EXPORT ePipelineObjectType : unsigned int {
+enum class LIBSKYENGINE_EXPORT ePipelineObjectType : unsigned int
+{
     OBJECT_3D,
     OBJECT_2D,
     LINE,
@@ -28,20 +28,24 @@ enum class LIBSKYENGINE_EXPORT ePipelineObjectType : unsigned int {
     TERRIAN_OBJECT,
     PARTICLE_CPU_OBJECT,
     PARTICLE_GPU_OBJECT,
-    TEXT_OVERLAY
+    TEXT_OVERLAY,
+    TEXT_FORM,
+    SHAPE_FORM,
+    UI_FORM
 };
 
 /**
  *  Класс помощник для более быстрого формирования объектов
  */
 // TODO: Закрыть данный класс от пользователя, реализовывать формирование через штатный открытый API класса Magick
-struct LIBSKYENGINE_EXPORT pipelineObject {
+struct LIBSKYENGINE_EXPORT pipelineObject
+{
     explicit pipelineObject(ePipelineObjectType type, std::vector<Vertex> vertices = std::vector<Vertex>(),
-                   std::vector<uint32_t> indices = std::vector<uint32_t>());
+                            std::vector<uint32_t> indices = std::vector<uint32_t>());
 
     pipelineObject(ePipelineObjectType type, std::string object_path);
 
-    explicit pipelineObject(void* obj);
+    explicit pipelineObject(void *obj);
 
     virtual ~pipelineObject() = default;
 
@@ -76,9 +80,15 @@ struct LIBSKYENGINE_EXPORT pipelineObject {
 
     void *create_Line(std::vector<Vertex> vertices);
 
+    void *create_UI_Form();
+
+    void *create_Text_Form();
+
+    void *create_Shape_Form();
+
     //
-//    uniformsBuffers ubo;
+    //    uniformsBuffers ubo;
     void *object;
 };
 
-#endif //VKDISPLAY_PIPLINEOBJECT_H
+#endif // VKDISPLAY_PIPLINEOBJECT_H
