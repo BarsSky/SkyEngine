@@ -1652,10 +1652,16 @@ struct LIBSKYENGINE_EXPORT TextForm : public UIForm, Object {
 
 	void createAdditinalBuffer() override;
 
+	void readShaderData() override;
+
 	/// @brief
 	uint32_t* frameBufferWidth;
 	uint32_t* frameBufferHeight;
 	float scale = 1.0;
+
+	uint32_t selectedId = 0;
+
+	managePushConstant manage_constant;
 
 private:
 	VkBuffer buffer{};

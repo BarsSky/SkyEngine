@@ -6471,6 +6471,31 @@ void TextForm::draw(VkCommandBuffer _buffer) {
   }
 }
 
+void TextForm::readShaderData() {
+    void* data;
+    vkMapMemory(vDevice->logicalDevice, pickObjectBuffer.memory, 0, sizeof(uint32_t) * DEPTH_ARRAY_SCALE, 0,
+        (void**)&data);
+    auto* pickingData = static_cast<uint32_t*>(data);
+
+    for (uint32_t i = 0; i < DEPTH_ARRAY_SCALE; ++i) {
+        if (pickingData[i] != 0) {
+            selectedId = pickingData[i];
+            break;
+        }
+    }
+    //TODO: FOR DEBUG
+    // if (selectedId != 0) {
+    //   std::cout << "Выбран объект с ID: " << selectedId << std::endl;
+    // } else {
+    //   std::cout << "Объект не выбран" << std::endl;
+    // }
+
+    manage_constant.selected_unique_ID = selectedId;
+
+    memset(data, 0, sizeof(uint32_t) * DEPTH_ARRAY_SCALE);
+    vkUnmapMemory(vDevice->logicalDevice, pickObjectBuffer.memory);
+}
+
 void TextForm::initialization() {
   updateFrameSize(vDevice->uWidth(), vDevice->uHeight());
 }
