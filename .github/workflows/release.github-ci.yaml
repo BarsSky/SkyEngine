@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  build:
     name: Release pushed tag
     runs-on: self-hosted
     needs: build
@@ -43,5 +43,5 @@ jobs:
             - Version: ${{ github.ref_name }}
             - Commit: ${{ github.sha }}
           files: |
-            mingw/mingw_binary/*
-            msvc/msvc_binary/*
+            mingw/**
+            msvc/**
