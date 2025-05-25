@@ -1,1 +1,70 @@
-# SkyEngine
+[![sky engine build](https://github.com/BarsSky/SkyEngine/actions/workflows/.github-ci.yaml/badge.svg?branch=master)](https://github.com/BarsSky/SkyEngine/actions/workflows/.github-ci.yaml)
+
+[English version / English README](doc/languages/Readme-En.md)
+
+# Твердь Машина
+
+## Описание
+
+**Твердь Машина** — это развивающийся 3D-движок, цель которого — изучение и демонстрация работы с API видеокарты [Vulkan](https://vulkan.org/).
+
+Проект поддерживает несколько платформ:
+- **Linux** (образы на базе Debian)
+- **Windows** (поддержка компиляторов MSVC и MinGW)
+
+---
+
+## Используемые зависимости
+
+- [ImGui](https://github.com/ocornut/imgui) — для пользовательского интерфейса
+- [Vulkan API](https://vulkan.org/) — основа рендеринга
+- [GLFW](https://github.com/glfw/glfw) — кроссплатформенное взаимодействие с ОС
+- [STB](https://github.com/nothings/stb.git) — работа с текстурами и изображениями
+- [QT 5.14](https://www.qt.io/) — опциональная интеграция
+- [Vulkan Examples](https://github.com/SaschaWillems/Vulkan) — материалы для изучения
+
+---
+
+## Возможности
+
+- Поддержка форматов: **GLTF/GLB**, **OBJ**, а также построение объектов по массивам вершин и индексов
+- Отрисовка 3D и 2D объектов с текстурами
+- Система частиц (CPU/GPU)
+- Отрисовка текста
+- Объёмные линии с использованием геометрического шейдера
+
+---
+
+## Планы на доработку
+
+- [ ] Настроить CI/CD автосборку проекта
+  - [X] Проверка сборки под Windows
+  - [ ] Проверка сборки под Linux/Debian
+- [ ] Класс камеры с позиционированием в разных точках сцены
+- [ ] Формат сцены (json/xml, затем бинарный)
+- [X] Определение положения курсора через пиксельный ownership (шейдеры + главный поток)
+- [X] Классы примитивов (линия, круг, прямоугольник)
+  - Реализация линии по буферу вершин, круг и прямоугольник — частные случаи
+- [ ] Подгружаемые ресурсы для примеров
+  - [ ] Вариации для разных типов сборок
+- [ ] Автогенерация документации Doxygen через CMake
+
+---
+
+## Скриншоты и примеры
+
+> _Скриншоты и примеры использования будут редактироваться в будущих версиях._
+
+![image](/doc/screenshots/test_screen.png)
+---
+
+## Контакты и поддержка
+
+- [Issues](https://github.com/BarsSky/SkyEngine/issues) — для багов и предложений
+- [Discussions](https://github.com/BarsSky/SkyEngine/discussions) — для вопросов и общения
+
+---
+
+**Лицензия:** MIT
+
+---

@@ -1,0 +1,6 @@
+SkyEngineMonitor version:0.2
+    - recreate view on qt widgets
+
+SkyEngineMonitor version:0.1
+-------------------
+	- first release

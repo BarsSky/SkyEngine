@@ -1,0 +1,134 @@
+#version 450
+
+struct ParticleGPU
+{
+    vec3 pos;
+    vec3 vel;
+    vec3 gradientPos;
+    vec3 randomPos;
+    float estLifetime;
+    float lifeTime;
+};
+
+// Binding 0 : Position storage buffer
+layout(set = 0,binding = 0) buffer Pos
+{
+    ParticleGPU particles[];
+};
+
+//layout (location = 2) out vec4 outAlpha;
+
+
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+layout (set = 0,binding = 1) uniform UBO
+{
+    uvec4 unique_id; 
+    float deltaT;
+    float destX;
+    float destY;
+    float destZ;
+    float estLifetime;
+    int particleCount;
+} ubo_gpu_particl;
+
+vec3 attraction(vec3 pos, vec3 attractPos)
+{
+    vec3 delta = attractPos;// - pos;
+    const float damp = 0.5;
+    float dDampedDot = dot(delta, delta) + damp;
+    float invDist = 1.0f / sqrt(dDampedDot);
+    float invDistCubed = invDist*invDist*invDist;
+    return delta * invDistCubed * 0.0035;
+}
+
+vec3 repulsion(vec3 pos, vec3 attractPos)
+{
+    vec3 delta = attractPos; //- pos;
+    float targetDistance = sqrt(dot(delta, delta));
+    return delta * (1.0 / (targetDistance * targetDistance * targetDistance)) * -0.000035;
+}
+
+float rand(vec2 co)
+{
+    return fract(sin(dot(co.xy,vec2(12.9898,78.233)))*43758.5453);
+}
+
+void main(){
+    // Current SSBO index
+    uint index = gl_GlobalInvocationID.x;
+    // Don't try to write beyond particle count
+    //if (index >= ubo_gpu_particl.particleCount)
+    //return;
+
+    // Read position and velocity
+    vec3 vVel = particles[index].vel.xyz;
+//    if(vVel==vec3(0)){
+//        return;
+//    }
+    vec3 vPos = particles[index].pos.xyz;
+    float living = particles[index].lifeTime;
+    float estimatedT = ubo_gpu_particl.estLifetime;
+    float alph = particles[index].gradientPos.y;
+    float gradient = particles[index].gradientPos.x;
+
+    vec3 destPos = estimatedT*normalize(vec3(ubo_gpu_particl.destX, ubo_gpu_particl.destY, ubo_gpu_particl.destZ));
+        if(destPos==vec3(0)){
+            particles[index].gradientPos.y = 0;
+            return;
+        }
+    vec3 random = particles[index].randomPos;
+    vec3 hflfway = random+((estimatedT-random)/2);
+    vec3 delta = random + vPos;
+    vec3 deltaTarget = destPos-random;
+    //vec3 delta = random - vPos;
+    float targetDistance = sqrt(dot(delta, delta));
+    float targetDistanceMinus = sqrt(dot(deltaTarget,deltaTarget));
+    vVel += repulsion(vPos, destPos.xyz) * 0.05;
+    //vVel = vec3(0.0);
+	//vVel += delta*0.01;
+
+    float k = estimatedT/3;
+
+    if ((targetDistance > estimatedT) || (living == 0.0) || (living > 10.0))
+    {
+
+
+        vPos = random*k*0.09f;//*normalize(destPos);
+        //vPos = random+normalize(destPos)*estimatedT*0.5;//+(destPos)*0.5;
+        vVel = sqrt(dot(random,random))*1*destPos * (1.0*k-dot(random,random)*0.5)*0.0755/estimatedT;
+        living = 0.0;
+        alph=1;
+        //gradient=0;
+    }
+
+    vPos += vVel;
+    living += ubo_gpu_particl.deltaT;
+    //alpha channel
+    
+    float buf = sqrt(dot(vPos-random,vPos-random));
+    float buf2 = estimatedT-sqrt(dot(random,random));
+    float buf3 = estimatedT-sqrt(dot(vPos,vPos));
+    //if(buf3<buf2)
+        alph -= (buf/buf2)*0.05;
+    gradient = 2*alph;//0.7+0.1*alph;
+    //     collide with boundary
+//    if ((vPos.x < -10.0) || (vPos.x > 10.0) || (vPos.y < -10.0) || (vPos.y > 10.0) || (vPos.z < -10.0) || (vPos.z > 10.0))
+//    vVel = (-vVel * 0.1) + attraction(vPos, destPos) * 12;
+//    else
+    //particles[index].pos.xyz = vPos;
+    // Write back
+    
+    particles[index].vel.xyz = vVel;
+    particles[index].lifeTime = living;
+    particles[index].pos.xyz = vPos;
+    //particles[index].gradientPos.xyz = vec3(1);
+    //particles[index].es = estimatedT;
+    //particles[index].vel.xyz = vVel;
+    particles[index].gradientPos.x = gradient;
+    particles[index].gradientPos.y = alph;
+    particles[index].gradientPos.z = k;
+    if (particles[index].gradientPos.x > 1.0)
+    particles[index].gradientPos.x -= 1.0;
+}
+

@@ -1,0 +1,19 @@
+#version 450
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout(binding = 0) uniform sampler2D textureSampler;
+layout(binding = 1) uniform MousePos {
+    vec2 mousePos;
+};
+layout(binding = 2, std430) buffer ObjectID {
+    int objectID;
+};
+
+void main() {
+    vec4 color = texture(textureSampler, mousePos);
+    // Пример логики определения объекта по цвету
+    if (color.r > 0.5) {
+        objectID = 1;
+    } else {
+        objectID = 0;
+    }
+}
