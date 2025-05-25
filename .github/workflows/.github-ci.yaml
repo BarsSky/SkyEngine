@@ -23,21 +23,39 @@ jobs:
 
       - name: cmake build for MINGW
         run: |
-          cmake -G "MinGW Makefiles" -B build_mingw -DCMAKE_INSTALL_PREFIX=mingw_binary .
+          cmake -G "MinGW Makefiles" -B build_mingw -DCMAKE_INSTALL_PREFIX=mingw_binary -DGLFW_LIB_ENABLE=ON -DQT_LIB_ENABLE=OFF .
           cmake --build build_mingw --target install -j12
-          Compress-Archive -Path mingw_binary\* -DestinationPath SkyEngine_mingw.zip
+          Compress-Archive -Path .\mingw_binary\ -DestinationPath SkyEngine_mingw.zip
 
       - name: cmake build for MSVC
         run: |
-          cmake -G "Visual Studio 17 2022" -A x64 -B build_msvc -DCMAKE_INSTALL_PREFIX=msvc_binary .
+          cmake -G "Visual Studio 17 2022" -A x64 -B build_msvc -DCMAKE_INSTALL_PREFIX=msvc_binary -DGLFW_LIB_ENABLE=ON -DQT_LIB_ENABLE=OFF .
           cmake --build build_msvc --target install -j 12
-          Compress-Archive -Path msvc_binary\* -DestinationPath SkyEngine_msvc.zip
+          Compress-Archive -Path .\msvc_binary\ -DestinationPath SkyEngine_msvc.zip
+
+      - name: cmake build for MINGW QT
+        run: |
+          cmake -G "MinGW Makefiles" -B build_mingwQT -DCMAKE_INSTALL_PREFIX=mingw_binaryQT -DQT_LIB_ENABLE=ON -DGLFW_LIB_ENABLE=OFF -DQT_PATH=C:/Qt/5.15.2/ .
+          cmake --build build_mingwQT --target install -j12
+          Compress-Archive -Path .\mingw_binaryQT\ -DestinationPath SkyEngine_mingwQT.zip
+
+      # - name: cmake build for MSVC
+      #   run: |
+      #     cmake -G "Visual Studio 17 2022" -A x64 -B build_msvc -DCMAKE_INSTALL_PREFIX=msvc_binary .
+      #     cmake --build build_msvc --target install -j 12
+      #     Compress-Archive -Path msvc_binary\* -DestinationPath SkyEngine_msvc.zip
 
       - name: Upload build artifacts MINGW
         uses: actions/upload-artifact@v4
         with:
           name: mingw-build
           path: ./SkyEngine_mingw.zip
+
+      - name: Upload build artifacts MINGWQT
+        uses: actions/upload-artifact@v4
+        with:
+          name: mingwQT-build
+          path: ./SkyEngine_mingwQT.zip
 
       - name: Upload build artifacts MSVC
         uses: actions/upload-artifact@v4
@@ -60,6 +78,12 @@ jobs:
           name: mingw-build
           path: mingw
 
+      - name: Download MinGWQT build
+        uses: actions/download-artifact@v4
+        with:
+          name: mingwQT-build
+          path: mingwQT
+
       - name: Download MSVC build
         uses: actions/download-artifact@v4
         with:
@@ -78,5 +102,6 @@ jobs:
             - Commit: ${{ github.sha }}
           files: |
             mingw/**
+            mingwQT/**
             msvc/**
 
