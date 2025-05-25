@@ -63,6 +63,20 @@ jobs:
           name: msvc-build
           path: ./SkyEngine_msvc.zip  
 
+      - name: Run cppcheck (static analysis)
+        run: |
+          cppcheck --enable=all --inconclusive --quiet --error-exitcode=1 --project=build_mingw/compile_commands.json || true
+          cppcheck --enable=all --inconclusive --quiet --error-exitcode=1 --project=build_msvc/compile_commands.json || true
+          cppcheck --enable=all --inconclusive --quiet --error-exitcode=1 --project=build_mingwQT/compile_commands.json || true
+        continue-on-error: true
+
+      - name: Run clang-tidy (static analysis)
+        run: |
+          clang-tidy -p build_mingw $(find . -name '*.cpp') || true
+          clang-tidy -p build_msvc $(find . -name '*.cpp') || true
+          clang-tidy -p build_mingwQT $(find . -name '*.cpp') || true
+        continue-on-error: true
+
   release:
     name: Release pushed tag
     runs-on: self-hosted
