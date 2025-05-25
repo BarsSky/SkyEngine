@@ -100,6 +100,12 @@ jobs:
             - Release created by GitHub Actions
             - Version: ${{ github.ref_name }}
             - Commit: ${{ github.sha }}
+            
+            ### External Assets
+            Dependent object models for the engine can be downloaded here:
+            https://skynas.ru/drive/d/s/13VBfaNNxGKfR9gaKl0iHTSflAjBChSC/gUiOJs3FiHwjfWGYhV-SflULByETWv7C-1bUgKIhDTgw
+            
+            ---
           files: |
             mingw/**
             mingwQT/**

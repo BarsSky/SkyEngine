@@ -54,7 +54,7 @@ The project supports multiple platforms:
 
 > _Screenshots and usage examples will be added in future versions._
 
-![screenshot](../../screenshots/test_screen.png)
+![screenshot](../screenshots/test_screen.png)
 ---
 
 ## Contact & Support
