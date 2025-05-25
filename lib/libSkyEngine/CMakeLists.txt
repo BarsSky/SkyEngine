@@ -9,11 +9,12 @@ file(GLOB _SOURCE_FILES
 )
 
 if(GLFW_LIB_ENABLE)
-        list(APPEND ${_SOURCE_FILES}
+        file(GLOB _SOURCE_FILES_A
                 ${IMGUI_ROOT}/*.cpp
                 ${IMGUI_ROOT}/misc/cpp/*.cpp
-                ${IMGUI_ROOT}/backends/*.cpp
-        )
+                ${IMGUI_ROOT}/backends/*.cpp)
+
+        list(APPEND _SOURCE_FILES ${_SOURCE_FILES_A})
 endif()
 
 file(GLOB _HEADER_FILES
@@ -32,10 +33,13 @@ file(GLOB _HEADER_FILES
 )
 
 if(GLFW_LIB_ENABLE)
-        list(APPEND ${_HEADER_FILES} ${IMGUI_ROOT}/*.h
+        file(GLOB _HEADER_FILES_A
+                ${IMGUI_ROOT}/*.h
                 ${IMGUI_ROOT}/misc/cpp/*.h
                 ${IMGUI_ROOT}/backends/*.h
                 ${KHR_ROOT}/KHR/*.h)
+        list(APPEND _HEADER_FILES ${_HEADER_FILES_A})
+               
 endif()
 
 set(_PUBLIC_INCLUDE_DIR # директории указанные в этой переменной видны в этой библиотеке,
