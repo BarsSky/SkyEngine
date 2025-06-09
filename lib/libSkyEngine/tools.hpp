@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #ifndef QT_LIB_ENABLE
 
 #define GLFW_INCLUDE_VULKAN
@@ -14,6 +15,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <SkyEngine/config/config.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 
@@ -38,11 +40,15 @@
 
 #endif
 
-// #ifdef __MINGW32__
-// #include <dirent.h>
-// #endif
+#ifdef __MINGW32__
+#include <dirent.h>
+#endif
 
-#ifdef WIN32
+#ifdef __MINGW64__
+#include <dirent.h>
+#endif
+
+#ifdef _MSC_VER
 #include "extension/dirent/dirent.h"
 #endif
 
@@ -162,21 +168,39 @@ createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFl
 }
 
 static std::vector<std::string> get_fonts() {
-  const auto path = std::string(DATA_DIRECTORY) + "/fonts";
-  DIR *dir;
-  if ((dir = opendir(path.data())) != nullptr) {
-    std::vector<std::string> _fonts;
-    struct dirent *ent;
-    while ((ent = readdir(dir)) != nullptr)
-      if (ent->d_type != DT_DIR)
-        _fonts.emplace_back(path + std::string(ent->d_name));
-    closedir(dir);
-    return _fonts;
-  } else {
-    rain::print("couldn't open directory " + path, color_dark_red, color_black);
+  std::vector<std::string> fonts;
+  const std::string path = std::string(DATA_DIRECTORY) + "/fonts";
+  std::ifstream test_dir(path);
+  if (!test_dir.good()) {
+    std::cerr << "Couldn't open directory " << path << std::endl;
+    return fonts;
   }
+  test_dir.close();
 
-  return std::vector<std::string>();
+#if defined(_WIN32)
+  WIN32_FIND_DATAA findFileData;
+  HANDLE hFind = FindFirstFileA((path + "/*").c_str(), &findFileData);
+  if (hFind != INVALID_HANDLE_VALUE) {
+    do {
+      if (!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+        fonts.emplace_back(path + "/" + findFileData.cFileName);
+      }
+    } while (FindNextFileA(hFind, &findFileData) != 0);
+    FindClose(hFind);
+  }
+#else
+  DIR *dir = opendir(path.c_str());
+  if (dir != nullptr) {
+    struct dirent *ent;
+    while ((ent = readdir(dir)) != nullptr) {
+      if (ent->d_type != DT_DIR && std::string(ent->d_name) != "." && std::string(ent->d_name) != "..") {
+        fonts.emplace_back(path + "/" + ent->d_name);
+      }
+    }
+    closedir(dir);
+  }
+#endif
+  return fonts;
 }
 
 namespace tools {

@@ -9,6 +9,8 @@
 #ifndef DIRENT_H
 #define DIRENT_H
 
+#ifdef _MSC_VER
+#include <cstdint>
 #ifndef __linux__
 /* Hide warnings about unreferenced local functions */
 #if defined(__clang__)
@@ -279,7 +281,7 @@ struct dirent {
     size_t d_namlen;
 
     /* File type */
-    int d_type;
+    uint64_t d_type;
 
     /* File name */
     char d_name[PATH_MAX+1];
@@ -1210,6 +1212,7 @@ dirent_set_errno(int error)
 
 #ifdef __cplusplus
 }
+#endif
 #endif
 #endif
 #endif /*DIRENT_H*/

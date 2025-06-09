@@ -1,4 +1,5 @@
 #include <cstring>
+
 #include <SkyEngine/config/config.h>
 #include <SkyEngine/vk_sky_device.hpp>
 #include "tools.hpp"
@@ -336,14 +337,18 @@ bool VulkanDevice::checkDeviceExtensionSupport(VkPhysicalDevice device)
     std::vector<VkExtensionProperties> availableExtensions(extensionCount);
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
 
-    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+    std::set<std::string> unsupportExtensions;//(deviceExtensions.begin(), deviceExtensions.end());
 
+    for(const auto &extension : deviceExtensions)
+    {
+        unsupportExtensions.insert(extension);
+    }
     for (const auto &extension : availableExtensions)
     {
-        requiredExtensions.erase(extension.extensionName);
+        unsupportExtensions.erase(extension.extensionName);
     }
 
-    return requiredExtensions.empty();
+    return unsupportExtensions.empty();
 }
 
 void VulkanDevice::getEnabledFeatures()

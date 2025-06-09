@@ -1,7 +1,7 @@
 #pragma once
 
 #include <SkyEngine/config/config.h>
-
+#include <memory>
 #include <vulkan/vulkan.h>
 
 #ifdef QT_LIB_ENABLE

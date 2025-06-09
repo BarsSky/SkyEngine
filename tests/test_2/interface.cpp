@@ -42,7 +42,7 @@ void Interface::set_first_camera() {
   camera.setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
   camera.setTarget(glm::vec3(0.0f, 0.0f, 0.0f));
   camera.setPerspective(60.0f, (float) *current_window.width / (float) *current_window.height, 0.1f, 10000.0f);
-  camera.movementSpeed = 100.f;
+  camera.movementSpeed = 10000.f;
 }
 
 void Interface::render() {
@@ -264,6 +264,8 @@ void Interface::updateUniformBuffer() {
   Earth->object_ubo.lightPositon = sun_position;
   Earth->object_ubo.view = camera.matrices.view;
   Earth->object_ubo.proj = camera.matrices.perspective;
+  Earth->object_ubo.viewPos = camera.viewPos;
+  Earth->object_ubo.unique_id = glm::vec4{10, 1, 0, 0}; ///< Set base value of unique id
 
   // auto size_nodes_an = modelAnimate->getLinearNodesSize();
   // for (int i = 0; i < size_nodes_an; ++i) {
@@ -466,4 +468,11 @@ void Interface::clear() {
 void Interface::magickCursor(double x_pos, double y_pos) {
   mouse_point = glm::vec2(x_pos,y_pos);
   VKSky::magickCursor(x_pos, y_pos);
+}
+
+void Interface::OnUpdateUIOverlay(gui::UIOverlay *overlay){
+
+  overlay->header("Change camera speed");
+  overlay->inputFloat("Speed value", &camera.movementSpeed,10,2);
+
 }

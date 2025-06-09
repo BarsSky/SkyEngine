@@ -70,12 +70,13 @@ jobs:
       #     cppcheck --enable=all --inconclusive --quiet --error-exitcode=1 --project=build_mingwQT/compile_commands.json || true
       #   continue-on-error: true
 
-      # - name: Run clang-tidy (static analysis)
-      #   run: |
-      #     clang-tidy -p build_mingw $(find . -name '*.cpp') || true
-      #     clang-tidy -p build_msvc $(find . -name '*.cpp') || true
-      #     clang-tidy -p build_mingwQT $(find . -name '*.cpp') || true
-      #   continue-on-error: true
+      - name: Run clang-tidy (static analysis)
+        run: |
+          Get-ChildItem -Recurse -Filter *.cpp | ForEach-Object { clang-tidy -p build_mingw $_.FullName } || $true
+          Get-ChildItem -Recurse -Filter *.cpp | ForEach-Object { clang-tidy -p build_msvc $_.FullName } || $true
+          Get-ChildItem -Recurse -Filter *.cpp | ForEach-Object { clang-tidy -p build_mingwQT $_.FullName } || $true
+        shell: pwsh
+        continue-on-error: true
 
   release:
     name: Release pushed tag
