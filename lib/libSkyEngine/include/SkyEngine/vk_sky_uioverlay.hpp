@@ -19,7 +19,7 @@
 
 namespace gui
 {
-    class UIOverlay
+    class LIBSKYENGINE_EXPORT UIOverlay
     {
     public:
         /// @brief
