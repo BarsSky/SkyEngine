@@ -5,6 +5,7 @@ name: sky engine build
 on: 
   push:
     branches:
+      - develop
       - cicd-dev
       - master
     tags:
