@@ -1,24 +1,25 @@
 [![sky engine build](https://github.com/BarsSky/SkyEngine/actions/workflows/.github-ci.yaml/badge.svg?branch=master)](https://github.com/BarsSky/SkyEngine/actions/workflows/.github-ci.yaml)
 
-# Sky Engine
+[Русская версия / Russian README](../../README.md)
 
+# SkyEngineBase
 
 ## Description
 
-**Sky Engine** is an evolving 3D engine project aimed at exploring and demonstrating the use of the [Vulkan](https://vulkan.org/) graphics API.
+**SkyEngineBase** is a developing 3D engine aimed at learning and demonstrating the use of the [Vulkan](https://vulkan.org/) graphics API.
 
 The project supports multiple platforms:
 - **Linux** (Debian-based images)
-- **Windows** (MSVC and MinGW compilers supported)
+- **Windows** (MSVC and MinGW compilers)
 
 ---
 
 ## Dependencies
 
 - [ImGui](https://github.com/ocornut/imgui) — for user interface
-- [Vulkan API](https://vulkan.org/) — core rendering
+- [Vulkan API](https://vulkan.org/) — rendering core
 - [GLFW](https://github.com/glfw/glfw) — cross-platform OS interaction
-- [STB](https://github.com/nothings/stb.git) — textures and images
+- [STB](https://github.com/nothings/stb.git) — image and texture loading
 - [QT 5.14](https://www.qt.io/) — optional integration
 - [Vulkan Examples](https://github.com/SaschaWillems/Vulkan) — learning materials
 
@@ -26,7 +27,7 @@ The project supports multiple platforms:
 
 ## Features
 
-- Support for formats: **GLTF/GLB**, **OBJ**, and custom objects from vertex/index arrays
+- Support for formats: **GLTF/GLB**, **OBJ**, and custom objects via vertex/index arrays
 - Rendering of 3D and 2D objects with textures
 - Particle system (CPU/GPU)
 - Text rendering
@@ -34,33 +35,45 @@ The project supports multiple platforms:
 
 ---
 
+## Test Examples
+
+To demonstrate the rendering of different objects and support for various OS interaction libraries (QT/GLFW), two test cases are provided:
+> tests/test1 — interface example with QT
+> tests/test2 — interface example with GLFW
+
+---
+
 ## Roadmap
 
-- [ ] Set up CI/CD auto-build for the project
-  - [X] Build check for Windows
-  - [ ] Build check for Linux/Debian
-- [ ] Camera class with positioning at different scene points
+- [ ] Set up CI/CD for automatic builds
+  - [X] Windows build verification
+  - [ ] Linux/Debian build verification via Docker
+- [ ] Animation processing for gltf files
+  - [ ] Detect available animations and expose them in the engine
+- [ ] Camera class with scene positioning
 - [ ] Scene format (json/xml, then binary)
-- [X] Object cursor position detection via pixel ownership (shaders + main thread)
+- [X] Cursor position detection via pixel ownership (shaders + main thread)
 - [X] Primitive classes (line, circle, rectangle)
   - Line via vertex buffer, circle and rectangle as special cases
-- [ ] Separately loadable resources for examples
-  - [ ] Variations for different library build types
-- [ ] Auto-generate documentation with Doxygen via CMake
+- [ ] Downloadable resources for examples
+  - [ ] Variations for different build types
+- [ ] Doxygen documentation auto-generation via CMake
+- [ ] Scene setup tool
+- [ ] Adaptive object and complex surface generation
 
 ---
 
 ## Screenshots and Examples
 
-> _Screenshots and usage examples will be added in future versions._
+> _Screenshots and usage examples will be updated in future versions._
 
-![screenshot](../screenshots/test_screen.png)
+![image](../screenshots/test_screen.png)
 ---
 
-## Contact & Support
+## Contacts & Support
 
 - [Issues](https://github.com/BarsSky/SkyEngine/issues) — for bugs and suggestions
-- [Discussions](https://github.com/BarsSky/SkyEngine/discussions) — for questions and community
+- [Discussions](https://github.com/BarsSky/SkyEngine/discussions) — for questions and communication
 
 ---
 

@@ -2,7 +2,7 @@
 
 #include <SkyEngine/config/config.h>
 #include <array>
-
+#include <memory>
 #ifndef QT_LIB_ENABLE
 #define GLFW_INCLUDE_VULKAN
 

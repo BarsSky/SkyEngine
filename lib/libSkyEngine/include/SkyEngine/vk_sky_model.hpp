@@ -1,7 +1,7 @@
 #pragma once
 
 #include <SkyEngine/config/config.h>
-
+#include <memory>
 #ifndef QT_LIB_ENABLE
 #define GLFW_INCLUDE_VULKAN
 

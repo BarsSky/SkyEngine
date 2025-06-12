@@ -113,10 +113,10 @@ private:
     const std::string _model_dir =MODELS_DIRECTORY;
     const std::string _shader_dir=SHADER_DIRECTORY;
     //итераторы объектов по отдельности
-    std::vector<uint> iter_draw;
+    std::vector<uint64_t> iter_draw;
 
     //количество объектов
-    uint draw_size=0;
+    uint64_t draw_size=0;
 
     //light options and obj positioning
     glm::vec4 sun_position;

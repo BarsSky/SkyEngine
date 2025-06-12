@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 
+#include <SkyEngine/config/config.h>
 #include <vulkan/vulkan.h>
 #include "vk_sky_device.hpp"
 #include "vk_sky_swapchain.hpp"
@@ -18,7 +19,7 @@
 
 namespace gui
 {
-    class UIOverlay
+    class LIBSKYENGINE_EXPORT UIOverlay
     {
     public:
         /// @brief

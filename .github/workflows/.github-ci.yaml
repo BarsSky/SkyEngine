@@ -5,6 +5,7 @@ name: sky engine build
 on: 
   push:
     branches:
+      - develop
       - cicd-dev
       - master
     tags:
@@ -39,10 +40,10 @@ jobs:
           cmake --build build_mingwQT --target install -j12
           Compress-Archive -Path .\mingw_binaryQT\ -DestinationPath SkyEngine_mingwQT.zip
 
-      # - name: cmake build for MSVC
+      # - name: cmake build for MSVC QT
       #   run: |
-      #     cmake -G "Visual Studio 17 2022" -A x64 -B build_msvc -DCMAKE_INSTALL_PREFIX=msvc_binary .
-      #     cmake --build build_msvc --target install -j 12
+      #     cmake -G "Visual Studio 17 2022" -A x64 -B build_msvc_QT -DCMAKE_INSTALL_PREFIX=msvc_binary_QT .
+      #     cmake --build build_msvc_QT --target install -j 12
       #     Compress-Archive -Path msvc_binary\* -DestinationPath SkyEngine_msvc.zip
 
       - name: Upload build artifacts MINGW
@@ -62,6 +63,22 @@ jobs:
         with:
           name: msvc-build
           path: ./SkyEngine_msvc.zip  
+
+      # - name: Run cppcheck (static analysis)
+      #   run: |
+      #     cppcheck --enable=all --inconclusive --quiet --error-exitcode=1 --project=build_mingw/compile_commands.json || true
+      #     cppcheck --enable=all --inconclusive --quiet --error-exitcode=1 --project=build_msvc/compile_commands.json || true
+      #     cppcheck --enable=all --inconclusive --quiet --error-exitcode=1 --project=build_mingwQT/compile_commands.json || true
+      #   continue-on-error: true
+
+      - name: Run clang-tidy (static analysis)
+        if: ${{ github.branch == 'develop' || github.event_name == 'pull_request' }}
+        run: |
+          Get-ChildItem -Recurse -Path lib/libSkyEngine -Filter *.cpp | ForEach-Object { clang-tidy -p build_mingw $_.FullName } || $true
+          Get-ChildItem -Recurse -Path lib/libSkyEngine -Filter *.cpp | ForEach-Object { clang-tidy -p build_msvc $_.FullName } || $true
+          Get-ChildItem -Recurse -Path lib/libSkyEngine -Filter *.cpp | ForEach-Object { clang-tidy -p build_mingwQT $_.FullName } || $true
+        shell: pwsh
+        continue-on-error: true
 
   release:
     name: Release pushed tag

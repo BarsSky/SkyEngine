@@ -9,6 +9,7 @@
 #include <chrono>
 #include <vector>
 #include <SkyEngine/vk_sky.hpp>
+#include <SkyEngine/vk_sky_uioverlay.hpp>
 
 using namespace vk_sky;
 
@@ -67,6 +68,8 @@ public:
 
   void render() override;
 
+  void OnUpdateUIOverlay(gui::UIOverlay *overlay) override;
+
   glm::mat4 calc_rotation_matrix(glm::vec3 rot_vector);
 
   void PrepareAssets() override;
@@ -100,7 +103,7 @@ public:
   /// Определяем публичные слоты для сигналов управления от виджетов QT
   ///
 private:
-  void magickCursor(double x_pos, double y_pos) override;
+  void magickCursor(double x_pos, double y_pos);
   // base directories
   const std::string _model_dir = MODELS_DIRECTORY;
   const std::string _shader_dir = SHADER_DIRECTORY;
