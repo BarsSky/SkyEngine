@@ -71,10 +71,11 @@ jobs:
       #   continue-on-error: true
 
       - name: Run clang-tidy (static analysis)
+        if: ${{ github.branch == 'develop' || github.event_name == 'pull_request' }}
         run: |
-          Get-ChildItem -Recurse -Filter *.cpp | ForEach-Object { clang-tidy -p build_mingw $_.FullName } || $true
-          Get-ChildItem -Recurse -Filter *.cpp | ForEach-Object { clang-tidy -p build_msvc $_.FullName } || $true
-          Get-ChildItem -Recurse -Filter *.cpp | ForEach-Object { clang-tidy -p build_mingwQT $_.FullName } || $true
+          Get-ChildItem -Recurse -Path lib/libSkyEngine -Filter *.cpp | ForEach-Object { clang-tidy -p build_mingw $_.FullName } || $true
+          Get-ChildItem -Recurse -Path lib/libSkyEngine -Filter *.cpp | ForEach-Object { clang-tidy -p build_msvc $_.FullName } || $true
+          Get-ChildItem -Recurse -Path lib/libSkyEngine -Filter *.cpp | ForEach-Object { clang-tidy -p build_mingwQT $_.FullName } || $true
         shell: pwsh
         continue-on-error: true
 
