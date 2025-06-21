@@ -1,6 +1,7 @@
 [![sky engine build](https://github.com/BarsSky/SkyEngine/actions/workflows/.github-ci.yaml/badge.svg?branch=master)](https://github.com/BarsSky/SkyEngine/actions/workflows/.github-ci.yaml)
 
 [English version / English README](doc/languages/Readme-En.md)
+[Документация / Documentation](doc/languages/)
 
 # Твердь Машина
 

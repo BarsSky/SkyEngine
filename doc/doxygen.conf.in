@@ -1,4 +1,3 @@
-
 #---------------------------------------------------------------------------
 # Project related configuration options
 #---------------------------------------------------------------------------
@@ -66,14 +65,20 @@ WARN_LOGFILE           = "@CMAKE_INSTALL_PREFIX@/doc/${PROJECT_NAME}_error.txt"
 #---------------------------------------------------------------------------
 # configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = "@CMAKE_CURRENT_SOURCE_DIR@/src/"\
+INPUT                  = "@CMAKE_CURRENT_SOURCE_DIR@/lib/libSkyEngine"\
+						 "@CMAKE_CURRENT_SOURCE_DIR@/doc/architecture.md"\
+						 "@CMAKE_CURRENT_SOURCE_DIR@/doc/modules.md"\
+						 "@CMAKE_CURRENT_SOURCE_DIR@/doc/howto.md"\
+						 "@CMAKE_CURRENT_SOURCE_DIR@/doc/build.md"\
+						 "@CMAKE_CURRENT_SOURCE_DIR@/doc/faq.md"\
+						"@CMAKE_CURRENT_SOURCE_DIR@/src/"\
 						 "@CMAKE_CURRENT_SOURCE_DIR@/tests/"\
 						"@CMAKE_CURRENT_SOURCE_DIR@/tools/"\
 						"@CMAKE_CURRENT_SOURCE_DIR@/examples/"\
 						"@SHARE_INCLUDES@"\
 						"@CMAKE_CURRENT_SOURCE_DIR@/doc/"
 						
-FILE_PATTERNS          = *.h *.c *.hpp *.cpp *.dox *.md
+FILE_PATTERNS          = *.h *.hpp *.cpp *.md *.dox
 RECURSIVE              = YES
 EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
@@ -108,7 +113,7 @@ HTML_OUTPUT            = html
 HTML_FILE_EXTENSION    = .html
 HTML_HEADER            =
 HTML_FOOTER            =
-HTML_STYLESHEET        =
+HTML_STYLESHEET        = @CMAKE_CURRENT_SOURCE_DIR@/doc/doxygen.css
 GENERATE_HTMLHELP      = NO
 HTML_DYNAMIC_SECTIONS  = YES
 CHM_FILE               =
@@ -123,7 +128,7 @@ TREEVIEW_WIDTH         = 250
 #---------------------------------------------------------------------------
 # configuration options related to the LaTeX output
 #---------------------------------------------------------------------------
-GENERATE_LATEX         = YES
+GENERATE_LATEX         = NO
 LATEX_OUTPUT           = latex
 LATEX_CMD_NAME         = latex
 MAKEINDEX_CMD_NAME     = makeindex

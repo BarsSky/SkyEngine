@@ -1,0 +1,25 @@
+# Doxygen Mainpage
+
+/**
+ * @mainpage SkyEngineBase API Documentation
+ *
+ * Welcome to the SkyEngineBase API documentation.
+ *
+ * SkyEngineBase is a cross-platform 3D engine for learning and demonstrating Vulkan API usage.
+ *
+ * ## Overview
+ * - For architecture and module descriptions, see the [doc/](../doc/) folder.
+ * - For build instructions, see [doc/build.md](../doc/build.md).
+ * - For usage examples, see [doc/howto.md](../doc/howto.md) and the [examples/](../examples/) directory.
+ *
+ * ## Getting Started
+ * - Add Doxygen-style comments to your code for best results.
+ * - Use the navigation panel to explore classes, files, and modules.
+ *
+ * ## Useful Links
+ * - [Project README](../README.md)
+ * - [English README](../doc/languages/Readme-En.md)
+ * - [FAQ](../doc/faq.md)
+ *
+ * ---
+ */
