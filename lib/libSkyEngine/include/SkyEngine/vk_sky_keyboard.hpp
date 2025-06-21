@@ -1,3 +1,34 @@
+/**
+ * @file vk_sky_keyboard.hpp
+ * @brief Defines input state structures and VulkanKeyboard class for handling keyboard, mouse, scroll, and cursor events.
+ * 
+ * @author BarsSky
+ * @version 1.0
+ * @date 05 October 2023
+ * 
+ * @details
+ * This header provides a set of structures to represent the state of various input devices (keyboard, mouse, scroll, cursor)
+ * and a static VulkanKeyboard class for managing and processing input events, particularly in Vulkan applications using GLFW.
+ * 
+ * @section Usage
+ * - Include this header in your Vulkan application to handle input events.
+ * - Use VulkanKeyboard::init_keyboard to initialize input callbacks with a GLFW window.
+ * - Access the current input state via VulkanKeyboard::core.
+ * 
+ * @section Structures
+ * - State: Base structure for input state, identifies the input platform.
+ * - keyState: Represents keyboard input state.
+ * - mouseState: Represents mouse button input state.
+ * - scrollState: Represents scroll wheel input state.
+ * - cursorState: Represents cursor position state.
+ * - keyCore: Manages a list of input states and provides methods to add, apply, and pop states.
+ * 
+ * @section Class
+ * - VulkanKeyboard: Static class for initializing and handling input callbacks, and managing input state.
+ * 
+ * @note
+ * Requires GLFW if GLFW_LIB_ENABLE is defined.
+ */
 #pragma once
 #include <SkyEngine/config/config.h>
 #ifdef GLFW_LIB_ENABLE
@@ -16,7 +47,9 @@ enum ACTION_PLATFORM : std::uint8_t { KEYBOARD, MOUSE, SCROLL, CURSOR };
 struct State {
   ACTION_PLATFORM platform;
 };
-
+/*
+    KeyState
+*/
 struct keyState : public State {
   keyState(int k_n, int k_s, int k_a, int k_m)
       : State(), key_name(k_n), key_scanCode(k_s), key_action(k_a),

@@ -1,3 +1,15 @@
+/**
+ * @file vk_sky_device.hpp
+ * @brief Класс и структуры для управления Vulkan-устройством и абстракцией окна (GLFW/Qt).
+ * @details
+ *  - Обеспечивает инициализацию Vulkan, создание surface, swapchain, управление памятью и очередями.
+ *  - Поддерживает кроссплатформенную работу с окнами через Qt или GLFW.
+ *  - Содержит вспомогательные методы для работы с буферами, рендер-проходами, семафорами и статистикой пайплайна.
+ *
+ * @author (c) SkyEngineBase
+ * @date 2024
+ */
+
 #pragma once
 
 #include <SkyEngine/config/config.h>
@@ -20,13 +32,16 @@
 #include <GLFW/glfw3.h>
 #endif
 
-#include <set>
 //
 
 #include <SkyEngine/export_import_magick.h>
 #include <SkyEngine/qt_plugin/vkwidget.h>
 #include <SkyEngine/vk_sky_buffer.hpp>
 
+/**
+ * @struct SwapChainSupportDetails
+ * @brief Описывает параметры поддержки swapchain для выбранного физического устройства.
+ */
 struct SwapChainSupportDetails
 {
     VkSurfaceCapabilitiesKHR capabilities;
@@ -34,15 +49,22 @@ struct SwapChainSupportDetails
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+/**
+ * @class VulkanDevice
+ * @brief Основной класс управления Vulkan-устройством, swapchain, очередями и окнами.
+ * @details
+ *  - Инкапсулирует создание и управление Vulkan instance, physical/logical device, очередями, swapchain, surface.
+ *  - Предоставляет методы для работы с буферами, командными пулами, семафорами, статистикой пайплайна и интеграцией с окнами (GLFW/Qt).
+ *  - Поддерживает кроссплатформенность и расширяемость.
+ */
 class LIBSKYENGINE_EXPORT VulkanDevice
 {
 public:
-    SwapChainSupportDetails swapChainSupport;
-
     // #ifdef QT_LIB_ENABLE
     //     QVulkanInstance q_instance;
     // #endif
-    VkInstance instance;
+
+    const SwapChainSupportDetails& getSwapChainSupport() const { return swapChainSupport; }
 
     VkQueue queue;
     //
@@ -111,6 +133,10 @@ public:
 
     explicit VulkanDevice();
 
+    VulkanDevice(const VulkanDevice &) = delete;
+    VulkanDevice(VulkanDevice &&) = delete;
+    VulkanDevice &operator=(const VulkanDevice &) = delete;
+    VulkanDevice &operator=(VulkanDevice &&) = delete;
     ~VulkanDevice();
 
     bool isDeviceSuitable(VkPhysicalDevice device);
@@ -149,6 +175,8 @@ public:
     VkSurfaceKHR surface;
 
     void createSurface();
+    
+    void createInstance(VkInstanceCreateInfo createInfo);
 
     bool beClosed();
 
@@ -225,9 +253,14 @@ public:
 
     class Window_Impl;
 
+    auto getInstance() const -> VkInstance
+    {
+        return instance;
+    }
 private:
+    VkInstance instance;
+    SwapChainSupportDetails swapChainSupport;
     std::unique_ptr<Window_Impl> u_ptr_window;
-
 #ifdef GLFW_LIB_ENABLE
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
 

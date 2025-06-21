@@ -48,10 +48,6 @@
 #include <dirent.h>
 #endif
 
-#ifdef _MSC_VER
-#include "extension/dirent/dirent.h"
-#endif
-
 #include "initializer.hpp"
 #include "frustum.hpp"
 #include "coloriser.h"
@@ -63,15 +59,17 @@ const std::vector<const char *> deviceExtensions = {
   VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
-#define VK_CHECK_RESULT(f)                                                                                                                    \
-    {                                                                                                                                         \
-        VkResult res = (f);                                                                                                                   \
-        if (res != VK_SUCCESS)                                                                                                                \
-        {                                                                                                                                     \
-            std::cout << "Fatal : VkResult is \"" << tools::errorString(res) << "\" in " << __FILE__ << " at line " << __LINE__ << std::endl; \
-            assert(res == VK_SUCCESS);                                                                                                        \
-        }                                                                                                                                     \
+// Forward declaration for tools::errorString
+namespace tools {
+  auto errorString(VkResult errorCode) -> std::string;
+}
+
+constexpr void VK_CHECK_RESULT(VkResult res, const char* file = __FILE__, int line = __LINE__) {
+    if (res != VK_SUCCESS) {
+        std::cout << "Fatal : VkResult is \"" << tools::errorString(res) << "\" in " << file << " at line " << line << std::endl;
+        assert(res == VK_SUCCESS);
     }
+}
 
 #define VK_FLAGS_NONE 0
 
@@ -85,15 +83,15 @@ const std::vector<const char *> deviceExtensions = {
 
 template<class T>
 struct optional {
-  T value() {
+  auto value() -> T {
     return _value;
   };
 
-  bool operator!=(optional elem) {
+  auto operator!=(optional elem) -> bool {
     return _value != elem.value();
   };
 
-  optional &operator=(T _val) {
+  auto operator=(T _val) -> optional & {
     _value = _val;
     isValue = true;
     return *this;
@@ -112,21 +110,21 @@ struct QueueFamilyIndices {
   optional<uint32_t> graphicsFamily;
   optional<uint32_t> presentFamily;
 
-  bool isComplete() {
+  auto isComplete() -> bool {
     return graphicsFamily.has_value() && presentFamily.has_value();
   }
 };
 
 
-static VkResult
-_CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
-                              const VkAllocationCallbacks *pAllocator, VkDebugUtilsMessengerEXT *pDebugMessenger) {
+static auto
+CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
+                              const VkAllocationCallbacks *pAllocator, VkDebugUtilsMessengerEXT *pDebugMessenger) -> VkResult {
   auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
   if (func != nullptr) {
     return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-  } else {
+  }  
     return VK_ERROR_EXTENSION_NOT_PRESENT;
-  }
+ 
 }
 
 static void _DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,

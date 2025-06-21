@@ -2,6 +2,7 @@
 
 #include <SkyEngine/config/config.h>
 #include <SkyEngine/vk_sky_device.hpp>
+#include <set>
 #include "tools.hpp"
 #include "extension/tinygltf/stb_image.h"
 #include "window_impl.h"
@@ -327,6 +328,14 @@ VkSampleCountFlagBits VulkanDevice::getMaxUsableSampleCount()
     }
 
     return VK_SAMPLE_COUNT_1_BIT;
+}
+
+void VulkanDevice::createInstance(VkInstanceCreateInfo createInfo)
+{
+  if (vkCreateInstance(&createInfo, g_Allocator, &instance) != VK_SUCCESS)
+  {
+    throw std::runtime_error("failed to create instance!");
+  }
 }
 
 bool VulkanDevice::checkDeviceExtensionSupport(VkPhysicalDevice device)

@@ -1,7 +1,8 @@
 [![sky engine build](https://github.com/BarsSky/SkyEngine/actions/workflows/.github-ci.yaml/badge.svg?branch=master)](https://github.com/BarsSky/SkyEngine/actions/workflows/.github-ci.yaml)
 
 [English version / English README](doc/languages/Readme-En.md)
-[Документация / Documentation](doc/languages/)
+
+[Документация / Documentation](doc/README-ru.md)
 
 # Твердь Машина
 
@@ -74,7 +75,6 @@
 ## Контакты и поддержка
 
 - [Issues](https://github.com/BarsSky/SkyEngine/issues) — для багов и предложений
-- [Discussions](https://github.com/BarsSky/SkyEngine/discussions) — для вопросов и общения
 
 ---
 

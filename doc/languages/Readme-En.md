@@ -2,6 +2,8 @@
 
 [Русская версия / Russian README](../../README.md)
 
+[Документация / Documentation](../README.md)
+
 # SkyEngineBase
 
 ## Description
@@ -39,6 +41,7 @@ The project supports multiple platforms:
 
 To demonstrate the rendering of different objects and support for various OS interaction libraries (QT/GLFW), two test cases are provided:
 > tests/test1 — interface example with QT
+
 > tests/test2 — interface example with GLFW
 
 ---
@@ -73,7 +76,6 @@ To demonstrate the rendering of different objects and support for various OS int
 ## Contacts & Support
 
 - [Issues](https://github.com/BarsSky/SkyEngine/issues) — for bugs and suggestions
-- [Discussions](https://github.com/BarsSky/SkyEngine/discussions) — for questions and communication
 
 ---
 
