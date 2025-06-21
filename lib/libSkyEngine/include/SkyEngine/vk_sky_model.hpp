@@ -383,7 +383,7 @@ enum class model_type : uint8_t { from_obj_file, from_ktx_file };
  */
 struct LIBSKYENGINE_EXPORT Model : public Object {
 public:
-  UniformBufferObject object_ubo{};
+  UniformBufferObject object_ubo{};///TODO: сделать приватным и ограничить вносимые измнения 
   Vertex vertex{};
 
   uint32_t *_buffer{}, *indeces{}, _shape_num{};
