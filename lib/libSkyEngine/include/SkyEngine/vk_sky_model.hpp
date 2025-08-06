@@ -383,7 +383,8 @@ enum class model_type : uint8_t { from_obj_file, from_ktx_file };
  */
 struct LIBSKYENGINE_EXPORT Model : public Object {
 public:
-  UniformBufferObject object_ubo{};///TODO: сделать приватным и ограничить вносимые измнения 
+  UniformBufferObject
+      object_ubo{}; /// TODO: сделать приватным и ограничить вносимые измнения
   Vertex vertex{};
 
   uint32_t *_buffer{}, *indeces{}, _shape_num{};
@@ -392,13 +393,13 @@ public:
   glm::vec3 currentPos;
 
   // Copy constructor
-  Model(const Model& other) = default;
+  Model(const Model &other) = delete;
   // Copy assignment operator
-  Model& operator=(const Model& other) = default;
+  auto operator=(const Model &other) -> Model & = delete;
   // Move constructor
-  Model(Model&& other) noexcept = default;
+  Model(Model &&other) noexcept = delete;
   // Move assignment operator
-  Model& operator=(Model&& other) noexcept = default;
+  auto operator=(Model &&other) noexcept -> Model & = delete;
 
   Model(uint32_t *buffer, uint32_t *_ind, uint32_t shape_num,
         model_type _type = model_type::from_obj_file);
@@ -414,15 +415,14 @@ public:
 
   ~Model() override;
 
-  glm::mat4 getOrintationMat(glm::vec3 vec, glm::vec3 start_orientation);
+  auto getOrintationMat(glm::vec3 vec, glm::vec3 start_orientation)
+      -> glm::mat4;
 
-  glm::vec3 getRotationVector(glm::vec3 point_to, glm::vec3 point_from,
-                              bool counterclockwise, glm::vec3 rotate_axis);
+  auto getRotationVector(glm::vec3 point_to, glm::vec3 point_from,
+                         bool counterclockwise, glm::vec3 rotate_axis)
+      -> glm::vec3;
 
-  VkDescriptorImageInfo *get_descriptor_image(size_t tex_idx) override;
-
-  //
-  VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+  auto get_descriptor_image(size_t tex_idx) -> VkDescriptorImageInfo * override;
 
   /**
    * @brief
@@ -494,7 +494,9 @@ public:
 private:
   std::vector<Vertex> vertices;
   std::vector<uint32_t> indices;
-  std::string path = "";
+  std::string path;
+
+  VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
   bool buffersBound = false;
   Vert vert;

@@ -1,0 +1,8 @@
+CompileFlags:
+  Add: 
+    - "-I${workspaceFolder}/lib/libSkyEngine/include"
+    - "-I${workspaceFolder}/tests/test_2"
+    - "-std=c++17"
+Diagnostics:
+  ClangTidy:
+    Checks: [clang-analyzer-*, performance-*]

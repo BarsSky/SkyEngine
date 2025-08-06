@@ -160,6 +160,7 @@ private:
   Partical_Model_GPU *gpu_particle = nullptr;
   Partical_Model_GPU *gpu_particle1 = nullptr;
   GLTF_Model *SpaceShip = nullptr;
+  std::vector<GLTF_Model *> SpaceShips;
   GLTF_Model *Axis_X = nullptr, *Axis_Y = nullptr, *Axis_Z = nullptr, *Axis_X2 = nullptr, *Axis_Y2 = nullptr, *Axis_Z2 = nullptr;
   Transparent_Model *Atmosphere = nullptr;
   GLTF_SkyBox *SkyBox = nullptr;

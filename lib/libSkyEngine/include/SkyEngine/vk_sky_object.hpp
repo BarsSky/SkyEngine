@@ -137,7 +137,7 @@ struct LIBSKYENGINE_EXPORT Object {
    *
    * @return std::vector<VkPipelineShaderStageCreateInfo>
    */
-  std::vector<VkPipelineShaderStageCreateInfo> getShaderStages() const;
+  auto getShaderStages() const -> std::vector<VkPipelineShaderStageCreateInfo>;
 
   /**
    * @brief
@@ -150,21 +150,21 @@ struct LIBSKYENGINE_EXPORT Object {
    *
    * @return std::vector<VkShaderModule>
    */
-  std::vector<VkShaderModule> getShaderModules() const;
+  auto getShaderModules() const -> std::vector<VkShaderModule>;
 
   /**
    * @brief Get the pipeline object
    *
    * @return VkPipelineLayout
    */
-  VkPipelineLayout get_pipeline_layout();
+  auto get_pipeline_layout() -> VkPipelineLayout;
 
   /**
    * @brief Get the descriptor set layout object
    *
    * @return VkDescriptorSetLayout
    */
-  virtual VkDescriptorSetLayout get_descriptor_set_layout();
+  virtual auto get_descriptor_set_layout() -> VkDescriptorSetLayout;
 
   /**
    * @brief Get the pipeline object
@@ -180,7 +180,7 @@ struct LIBSKYENGINE_EXPORT Object {
    *
    * @return VkDescriptorSet
    */
-  VkDescriptorSet get_descriptor_set();
+  auto get_descriptor_set() -> VkDescriptorSet;
 
   /**
     *@brief set visible property
@@ -192,7 +192,7 @@ struct LIBSKYENGINE_EXPORT Object {
    * @brief Destroy the Object object
    *
    */
-  virtual ~Object();;
+  virtual ~Object();
 
   void cleanObjectSwapChain();
 
@@ -201,14 +201,14 @@ struct LIBSKYENGINE_EXPORT Object {
    *
    * @return VkDeviceSize
    */
-  virtual VkDeviceSize getBufferSize() = 0;
+  virtual auto getBufferSize() -> VkDeviceSize = 0;
 
   /**
    * @brief Get the Textures object
    *
    * @return std::vector<Texture*>
    */
-  virtual uint32_t getTexturesSize() = 0;
+  virtual auto getTexturesSize() -> uint32_t = 0;
 
   /**
    * @brief Get the descriptor object
@@ -216,21 +216,21 @@ struct LIBSKYENGINE_EXPORT Object {
    * @param tex_idx
    * @return VkDescriptorImageInfo*
    */
-  virtual VkDescriptorImageInfo *get_descriptor_image(size_t tex_idx) = 0;
+  virtual auto get_descriptor_image(size_t tex_idx) -> VkDescriptorImageInfo * = 0;
 
   /**
    * @brief Get the Buffer object
    *
    * @return viBuffer
    */
-  virtual viBuffer *getBuffer() = 0;
+  virtual auto getBuffer() -> viBuffer * = 0;
 
   /**
    * @brief Get the Indices object
    *
    * @return std::vector<uint32_t>
    */
-  virtual std::vector<uint32_t> *getIndices() = 0;
+  virtual auto getIndices() -> std::vector<uint32_t> * = 0;
 
   /**
    * @brief
@@ -379,25 +379,25 @@ struct LIBSKYENGINE_EXPORT Object {
    * @brief get compute buffer
    * @return
    */
-  VkCommandBuffer *getComputeBuffer() const;
+  auto getComputeBuffer() const -> VkCommandBuffer *;
 
   /**
    * @brief get compute queue
    * @return
    */
-  VkQueue getComputeQueue() const;
+  auto getComputeQueue() const -> VkQueue;
 
   /**
    * @brief get compute semaphore
    * @return
    */
-  VkSemaphore *getComputeSemaphore();
+  auto getComputeSemaphore() -> VkSemaphore *;
 
   /**
    * @brief get graphic semaphore
    * @return VkSemaphore
    */
-  VkSemaphore *getGraphicSemaphore() const;
+  auto getGraphicSemaphore() const -> VkSemaphore *;
 
   /**
  *  @brief get data from shader
@@ -475,11 +475,11 @@ struct LIBSKYENGINE_EXPORT Object {
   /////////// Методы управления характеристиками объекта ////////////
   glm::vec3 obj_position = glm::vec3(0.0f, 0.0f, 0.0f);
 
-  glm::vec3 position();
+  auto position() -> glm::vec3;
 
-  glm::vec3 rotation_axis();
+  auto rotation_axis() -> glm::vec3;
 
-  float rotation_speed();
+  auto rotation_speed() -> float;
 
   void set_rotation_angle(float *angle);
 
@@ -497,7 +497,7 @@ private:
    * @param stage
    * @return VkPipelineShaderStageCreateInfo
    */
-  VkPipelineShaderStageCreateInfo LoadShader(const std::string &filename, VkShaderStageFlagBits stage);
+  auto LoadShader(const std::string &filename, VkShaderStageFlagBits stage) -> VkPipelineShaderStageCreateInfo;
 
   std::vector<VkShaderModule> shaderModules;
   /**

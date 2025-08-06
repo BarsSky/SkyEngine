@@ -32,9 +32,9 @@ set(_PRIVATE_DEFINITIONS
     ELPP_THREAD_SAFE
 )
 
-if (MSVC)
+if(MSVC)
     list(APPEND _PRIVATE_DEFINITIONS _MSVC_LANG=201103L)
-endif ()
+endif()
 
 # создаёт проект для исполняемого файла
 helper_add_executable(${_TARGET_NAME}
@@ -80,11 +80,11 @@ helper_target_link_libraries(${_TARGET_NAME}
 
 
 #Здесь указываются необходимые для работы с исполняемым файлом 
- install(DIRECTORY
- 		"${CMAKE_SOURCE_DIR}/data/fragments/shaders/comp/"
- 		DESTINATION "${SHADER_DIRECTORY}"
- 		COMPONENT applications #тип файла - настроечный
- 		)
+install(DIRECTORY
+    "${CMAKE_SOURCE_DIR}/data/fragments/shaders/comp/"
+    DESTINATION "${SHADER_DIRECTORY}"
+    COMPONENT applications #тип файла - настроечный
+)
 # install(DIRECTORY
 # 		"${CMAKE_SOURCE_DIR}/data/models/"
 # 		DESTINATION "${MODELS_DIRECTORY}"

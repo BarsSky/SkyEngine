@@ -13,3 +13,4 @@ CTestTestfile.cmake
 /data/models
 /data/shaders
 /data/glslc
+checks.json
