@@ -1,8 +1,6 @@
 #include <cstring>
-
 #include <SkyEngine/config/config.h>
 #include <SkyEngine/vk_sky_device.hpp>
-#include <set>
 #include "tools.hpp"
 #include "extension/tinygltf/stb_image.h"
 #include "window_impl.h"
@@ -330,14 +328,6 @@ VkSampleCountFlagBits VulkanDevice::getMaxUsableSampleCount()
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-void VulkanDevice::createInstance(VkInstanceCreateInfo createInfo)
-{
-  if (vkCreateInstance(&createInfo, g_Allocator, &instance) != VK_SUCCESS)
-  {
-    throw std::runtime_error("failed to create instance!");
-  }
-}
-
 bool VulkanDevice::checkDeviceExtensionSupport(VkPhysicalDevice device)
 {
     uint32_t extensionCount;
@@ -346,18 +336,14 @@ bool VulkanDevice::checkDeviceExtensionSupport(VkPhysicalDevice device)
     std::vector<VkExtensionProperties> availableExtensions(extensionCount);
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
 
-    std::set<std::string> unsupportExtensions;//(deviceExtensions.begin(), deviceExtensions.end());
+    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
-    for(const auto &extension : deviceExtensions)
-    {
-        unsupportExtensions.insert(extension);
-    }
     for (const auto &extension : availableExtensions)
     {
-        unsupportExtensions.erase(extension.extensionName);
+        requiredExtensions.erase(extension.extensionName);
     }
 
-    return unsupportExtensions.empty();
+    return requiredExtensions.empty();
 }
 
 void VulkanDevice::getEnabledFeatures()
@@ -405,6 +391,12 @@ void VulkanDevice::clearQueryPool()
         vkFreeMemory(logicalDevice, queryResult.memory, nullptr);
     }
 }
+
+void VulkanDevice::setImageCount(uint32_t _count) {
+    imageCount = _count;
+}
+
+auto VulkanDevice::getImageCount() const -> uint32_t { return imageCount; }
 
 VkResult
 VulkanDevice::createLogicalDevice(std::vector<const char *> enabledExtensions, void *pNextChain, bool useSwapChain,

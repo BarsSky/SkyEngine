@@ -2,15 +2,16 @@
 // Created by ubuntu on 31.07.24.
 //
 #include "vk_sky_impl.h"
+#include "vk_sky.hpp"
 #include "vk_sky_pipelineobject.hpp"
 #include <SkyEngine/config/config.h>
+#include <array>
 
 using namespace vk_sky;
 
 void VKSky::CImpl::updateBufferMapped() {
-  for (auto &obj : all_objects) {
+  for (auto &obj : all_objects)
     obj->updateMapped();
-  }
 }
 
 Screen VKSky::CImpl::getScreen() {
@@ -33,7 +34,9 @@ void VKSky::CImpl::endLoop() const { vkDeviceWaitIdle(vDevice.logicalDevice); }
 
 void VKSky::CImpl::impl_flush() const {
 #ifdef __linux__
+#ifndef GLFW_LIB_ENABLE
   xcb_flush(vDevice.get_connection());
+#endif
 #endif
 }
 
@@ -52,16 +55,15 @@ VkWidget *VKSky::CImpl::get_vk_widget(QWidget *parent) {
 void VKSky::CImpl::set_camera_ptr(ObjCamera *aCamera) { camera = aCamera; }
 
 void VKSky::CImpl::addObjectsToThread() {
-  for (auto &all_object : all_objects) {
+  for (auto &all_object : all_objects)
     addObjectToThread(all_object);
-  }
 }
 
 void VKSky::CImpl::addObjectToThread(Object *object) {
   /*
          Add thread type
      */
-  std::unique_lock<std::mutex> lock(mute);
+  std::unique_lock<std::mutex> lk(mute);
   if ((threadObjects.empty()) || (threadObjects.size() <= numThreads)) {
     threadObjects.emplace_back(&vDevice.logicalDevice);
     threadObjects.back().objectsInThread.push_back(object);
@@ -71,9 +73,8 @@ void VKSky::CImpl::addObjectToThread(Object *object) {
     threadObjects.at(threadObjectCount).objectsInThread.push_back(object);
     threadObjects.at(threadObjectCount).numOfObjectsInThread++;
     threadObjectCount++;
-    if (threadObjectCount >= threadObjects.size()) {
+    if (threadObjectCount >= threadObjects.size())
       threadObjectCount = 0;
-    }
   }
 
   threadObjects.back().configure_buffer(vDevice.logicalDevice,
@@ -98,36 +99,33 @@ Object *VKSky::CImpl::createObject(const pipelineObject &pipeline,
                                    vk_sky::ObjectFlags flag) {
   switch (flag) {
   case ObjectFlags::BASE_LOAD:
-    all_objects.emplace_back(static_cast<Object *>(pipeline.object));
+    all_objects.emplace_back(reinterpret_cast<Object *>(pipeline.object));
     break;
   case ObjectFlags::LOAD_IN_THREAD:
-    all_objects.emplace_back(static_cast<Object *>(pipeline.object));
-    addObjectToThread(static_cast<Object *>(pipeline.object));
+    all_objects.emplace_back(reinterpret_cast<Object *>(pipeline.object));
+    addObjectToThread(reinterpret_cast<Object *>(pipeline.object));
     break;
   default:
-    all_objects.emplace_back(static_cast<Object *>(pipeline.object));
+    all_objects.emplace_back(reinterpret_cast<Object *>(pipeline.object));
     break;
   }
   // буфер для хранения объектов
   draw_objects.emplace_back(pipeline);
-  if (static_cast<Object *>(pipeline.object)->render_flags ==
+  if (reinterpret_cast<Object *>(pipeline.object)->render_flags ==
           ObjectRenderFlags::STDOBJECT ||
-      static_cast<Object *>(pipeline.object)->render_flags ==
-          ObjectRenderFlags::CMPTOBJECT) {
-    std_objects.emplace_back(static_cast<Object *>(pipeline.object));
-  }
+      reinterpret_cast<Object *>(pipeline.object)->render_flags ==
+          ObjectRenderFlags::CMPTOBJECT)
+    std_objects.emplace_back(reinterpret_cast<Object *>(pipeline.object));
 
-  if (static_cast<Object *>(pipeline.object)->render_flags ==
-      ObjectRenderFlags::TRNOBJECT) {
-    trn_objects.emplace_back(static_cast<Object *>(pipeline.object));
-  }
+  if (reinterpret_cast<Object *>(pipeline.object)->render_flags ==
+      ObjectRenderFlags::TRNOBJECT)
+    trn_objects.emplace_back(reinterpret_cast<Object *>(pipeline.object));
 
-  if (static_cast<Object *>(pipeline.object)->render_flags ==
-      ObjectRenderFlags::CMPTOBJECT) {
-    compute_objects.emplace_back(static_cast<Object *>(pipeline.object));
-  }
+  if (reinterpret_cast<Object *>(pipeline.object)->render_flags ==
+      ObjectRenderFlags::CMPTOBJECT)
+    compute_objects.emplace_back(reinterpret_cast<Object *>(pipeline.object));
 
-  return static_cast<Object *>(pipeline.object);
+  return reinterpret_cast<Object *>(pipeline.object);
 }
 
 void VKSky::CImpl::loadAssets(Object *obj) {
@@ -175,8 +173,8 @@ void VKSky::CImpl::recreateSwapChain() {
 
 #ifdef GLFW_LIB_ENABLE
   if (enableUI) {
-    gui::UIOverlay::resize(VkSwapChain.swapChainExtent.width,
-                           VkSwapChain.swapChainExtent.height);
+    uiOverlay.resize(VkSwapChain.swapChainExtent.width,
+                     VkSwapChain.swapChainExtent.height);
   }
 #endif
 
@@ -184,20 +182,18 @@ void VKSky::CImpl::recreateSwapChain() {
   createCommandBuffers();
   buildCommandBuffer();
 
-  for (auto &fence : waitFences) {
+  for (auto &fence : waitFences)
     vkDestroyFence(vDevice.logicalDevice, fence, nullptr);
-  }
 
   createSynchronizationPrimitives();
 
   vkDeviceWaitIdle(vDevice.logicalDevice);
 
   if (VkSwapChain.swapChainExtent.width > 0 &&
-      VkSwapChain.swapChainExtent.height > 0) {
+      VkSwapChain.swapChainExtent.height > 0)
     camera->updateAspectRatio(
         static_cast<float>(VkSwapChain.swapChainExtent.width) /
         static_cast<float>(VkSwapChain.swapChainExtent.height));
-  }
 
   viewChanged();
   prepared = true;
@@ -205,9 +201,7 @@ void VKSky::CImpl::recreateSwapChain() {
 
 void VKSky::CImpl::update() { updateBufferMapped(); }
 
-auto VKSky::CImpl::ready_to_close() const -> bool {
-  return vDevice.ready_to_close;
-}
+bool VKSky::CImpl::ready_to_close() const { return vDevice.ready_to_close; }
 
 void VKSky::CImpl::visible_ui(bool flag) { enableUI = flag; }
 
@@ -215,6 +209,9 @@ void VKSky::CImpl::destroyCommandBuffers() const {
   vkFreeCommandBuffers(vDevice.logicalDevice, cmdPool,
                        static_cast<uint32_t>(commandBuffers.size()),
                        commandBuffers.data());
+  vkFreeCommandBuffers(vDevice.logicalDevice, cmdPool,
+                       static_cast<uint32_t>(uiCmdBuffer.size()),
+                       uiCmdBuffer.data());
 }
 
 void VKSky::CImpl::prepareObjectType() {
@@ -226,9 +223,8 @@ void VKSky::CImpl::prepareObjectType() {
   if (iter != all_objects.end()) {
     VkSwapChain.setRenderType(RenderType::USE_TRANSPARENT_OBJECT);
 #ifdef GLFW_LIB_ENABLE
-    if (enableUI) {
+    if (enableUI)
       uiOverlay.increaseSubPass();
-    }
 #endif
   }
 }
@@ -252,8 +248,8 @@ void VKSky::CImpl::setupDebugMessenger() {
   VkDebugUtilsMessengerCreateInfoEXT createInfo;
   populateDebugMessengerCreateInfo(createInfo);
 
-  if (CreateDebugUtilsMessengerEXT(vDevice.getInstance(), &createInfo, nullptr,
-                                   &debugMessenger) != VK_SUCCESS) {
+  if (CreateDebugUtilsMessengerEXT(vDevice.instance, &createInfo, nullptr,
+                                    &debugMessenger) != VK_SUCCESS) {
     throw std::runtime_error("failed to set up debug messenger!");
   }
 
@@ -262,21 +258,21 @@ void VKSky::CImpl::setupDebugMessenger() {
 
 void VKSky::CImpl::cleanup() {
   VkSwapChain.cleanupSwapChain();
-  for (auto &obj : all_objects) {
+  for (auto &obj : all_objects)
     obj->cleanObjectSwapChain();
-  }
 
   vkDestroyPipelineCache(vDevice.logicalDevice, pipelineCache, nullptr);
 
-  for (auto &obj : all_objects) {
+  for (auto &obj : all_objects)
     vkDestroyPipelineCache(vDevice.logicalDevice, obj->pipelineCache, nullptr);
-  }
 
-  for (auto &all_object : all_objects) {
-    vkDestroyPipeline(vDevice.logicalDevice, all_object->pipeline, nullptr);
-    vkDestroyPipelineLayout(vDevice.logicalDevice, all_object->pipelineLayout,
-                            nullptr);
-    vkDestroyRenderPass(vDevice.logicalDevice, all_object->renderPass, nullptr);
+  for (size_t i = 0; i < all_objects.size(); i++) {
+    vkDestroyPipeline(vDevice.logicalDevice, all_objects.at(i)->pipeline,
+                      nullptr);
+    vkDestroyPipelineLayout(vDevice.logicalDevice,
+                            all_objects.at(i)->pipelineLayout, nullptr);
+    vkDestroyRenderPass(vDevice.logicalDevice, all_objects.at(i)->renderPass,
+                        nullptr);
   }
   vkDestroyRenderPass(vDevice.logicalDevice, vDevice.renderPass, nullptr);
 
@@ -289,19 +285,16 @@ void VKSky::CImpl::cleanup() {
 
   destroyCommandBuffers();
 
-  for (auto &threadObject : threadObjects) {
-    threadObject.destroy();
-  }
+  //    for (auto &threadObject : threadObjects)
+  //        threadObject.destroy();
 
-  for (auto &all_object : all_objects) {
+  for (auto &all_object : all_objects)
     vkDestroyDescriptorSetLayout(vDevice.logicalDevice,
                                  all_object->get_descriptor_set_layout(),
                                  nullptr);
-  }
 
-  for (auto &all_object : all_objects) {
+  for (auto &all_object : all_objects)
     all_object->object_destroy();
-  }
 
   vDevice.clearQueryPool();
 
@@ -310,13 +303,11 @@ void VKSky::CImpl::cleanup() {
   vkDestroySemaphore(vDevice.logicalDevice, vDevice.semaphores.renderComplete,
                      nullptr);
   // Destroy Semaphore for compute objects
-  for (auto &cmp_object : compute_objects) {
+  for (auto &cmp_object : compute_objects)
     cmp_object->clearComputeBlock();
-  }
 
-  for (auto &fence : waitFences) {
+  for (auto &fence : waitFences)
     vkDestroyFence(vDevice.logicalDevice, fence, nullptr);
-  }
 
 #ifdef GLFW_LIB_ENABLE
   if (enableUI) {
@@ -327,22 +318,25 @@ void VKSky::CImpl::cleanup() {
   vkDestroyCommandPool(vDevice.logicalDevice, cmdPool, nullptr);
   vkDestroyCommandPool(vDevice.logicalDevice, vDevice.commandPool, nullptr);
 
-  vkDestroyPipelineCache(vDevice.logicalDevice, pipelineCache, nullptr);
-
   vkDestroyDevice(vDevice.logicalDevice, nullptr);
-#ifdef VULKAN_VALIDATION_LAYERS
-  DestroyDebugUtilsMessengerEXT(vDevice.getInstance(), debugMessenger, nullptr);
-#endif
-  for (auto &obj : all_objects) {
-    delete obj;
-  }
 
-  vkDestroySurfaceKHR(vDevice.getInstance(), vDevice.surface, nullptr);
-  vkDestroyInstance(vDevice.getInstance(), nullptr);
+#ifdef VULKAN_VALIDATION_LAYERS
+  DestroyDebugUtilsMessengerEXT(vDevice.instance, debugMessenger, nullptr);
+#endif
+  for (auto &obj : all_objects)
+    delete obj;
+
+  vkDestroySurfaceKHR(vDevice.instance, vDevice.surface, nullptr);
+  vkDestroyInstance(vDevice.instance, nullptr);
+
+  all_objects.clear();
+  trn_objects.clear();
+  compute_objects.clear();
+  std_objects.clear();
 }
 
-auto VKSky::CImpl::checkValidationLayerSupport() -> bool {
-  uint32_t layerCount = 0;
+bool VKSky::CImpl::checkValidationLayerSupport() {
+  uint32_t layerCount;
   vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
   std::vector<VkLayerProperties> availableLayers(layerCount);
@@ -369,17 +363,16 @@ auto VKSky::CImpl::checkValidationLayerSupport() -> bool {
 void VKSky::CImpl::DestroyDebugUtilsMessengerEXT(
     VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
     const VkAllocationCallbacks *pAllocator) {
-  auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
-      vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
+  auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+      instance, "vkDestroyDebugUtilsMessengerEXT");
   if (func != nullptr) {
     func(instance, debugMessenger, pAllocator);
   }
 }
 
 void VKSky::CImpl::createPipelineCache() {
-  for (auto *draw : all_objects) {
+  for (auto draw : all_objects)
     draw->createPipelineCache();
-  }
   // VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
   // pipelineCacheCreateInfo.sType =
   // VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO; if
@@ -403,7 +396,7 @@ void VKSky::CImpl::manageViewportDraw(unsigned int current_buff) {
                          ((float)(vc + 1)),
                      (float)VkSwapChain.swapChainExtent.height,
                      0.0,
-                     1.0F};
+                     1.0f};
     //                viewports[1] = {(float) VkSwapChain.swapChainExtent.width
     //                / 2.0f,
     //                                0,
@@ -424,9 +417,8 @@ void VKSky::CImpl::manageViewportDraw(unsigned int current_buff) {
     vkCmdSetViewport(commandBuffers[current_buff], 0, 1, &viewports[vc]);
     vkCmdSetScissor(commandBuffers[current_buff], 0, 1, &scissorRects[vc]);
     //                vkCmdSetLineWidth(commandBuffers[i],1.0f);
-    for (auto &obj : std_objects) {
+    for (auto &obj : std_objects)
       obj->object_draw(commandBuffers[current_buff]);
-    }
   }
   if (!trn_objects.empty()) {
     vkCmdNextSubpass(commandBuffers[current_buff], VK_SUBPASS_CONTENTS_INLINE);
@@ -435,36 +427,35 @@ void VKSky::CImpl::manageViewportDraw(unsigned int current_buff) {
       vkCmdSetScissor(commandBuffers[current_buff], 0, 1, &scissorRects[vc]);
       // Делаем переход между SubPass на следующий уровень
 
-      for (auto &obj : trn_objects) {
+      for (auto &obj : trn_objects)
         obj->draw(commandBuffers[current_buff]);
-      }
     }
   }
 }
 
 void VKSky::CImpl::prepareMultiThreadRender() {
-  for (auto &object : threadObjects) {
+  for (auto &object : threadObjects)
     object.configure_buffer(vDevice.logicalDevice, VkSwapChain.queueNodeIndex,
                             VkSwapChain.imageCount);
-  }
 }
 
-void VKSky::CImpl::threadRenderFunction(
-    uint32_t threadIndex, uint32_t object_index, uint32_t bufferCount,
+void VKSky::CImpl::threadRenderFunctionSTD(
+    uint32_t threadIndex, uint32_t bufferCount,
     VkCommandBufferInheritanceInfo inheritanceInfo) {
-  Object *object =
-      threadObjects.at(threadIndex).objectsInThread.at(object_index);
+
+  Object *object = std_objects.at(threadIndex); //
   if (object == nullptr) {
     throw std::runtime_error("object is nullptr");
   }
   VkCommandBufferBeginInfo commandBufferBeginInfo =
       initializers::commandBufferBeginInfo();
+
   commandBufferBeginInfo.flags =
       VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
   commandBufferBeginInfo.pInheritanceInfo = &inheritanceInfo;
 
   VkCommandBuffer cmdBuffer =
-      threadObjects.at(threadIndex).get_cmdBuffer(object_index, bufferCount);
+      std_objects.at(threadIndex)->cmdBuffer[bufferCount];
 
   VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &commandBufferBeginInfo));
 
@@ -478,29 +469,67 @@ void VKSky::CImpl::threadRenderFunction(
       static_cast<int32_t>(VkSwapChain.swapChainExtent.height), 0, 0);
   vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
-  // if (vDevice.supportedFeatures.pipelineStatisticsQuery && vDevice.queryPool
-  // != VK_NULL_HANDLE)
-  //     vkCmdResetQueryPool(cmdBuffer, vDevice.queryPool, 0, 2);
-
-  // vkCmdBeginRenderPass(cmdBuffer, &renderPassInfo,
-  // VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-
   object->object_draw(cmdBuffer);
 
-  // vkCmdEndRenderPass(cmdBuffer);
+  VK_CHECK_RESULT(vkEndCommandBuffer(cmdBuffer));
+}
+
+void VKSky::CImpl::threadRenderFunctionTRN(
+    uint32_t threadIndex, uint32_t bufferCount,
+    VkCommandBufferInheritanceInfo inheritanceInfo) {
+
+  Object *object = trn_objects.at(threadIndex); //
+  if (object == nullptr) {
+    throw std::runtime_error("object is nullptr");
+  }
+  VkCommandBufferBeginInfo commandBufferBeginInfo =
+      initializers::commandBufferBeginInfo();
+  /// Make step on another subpass level
+  inheritanceInfo.subpass = 1;
+
+  commandBufferBeginInfo.flags =
+      VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+  commandBufferBeginInfo.pInheritanceInfo = &inheritanceInfo;
+
+  VkCommandBuffer cmdBuffer =
+      trn_objects.at(threadIndex)->cmdBuffer[bufferCount];
+
+  VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &commandBufferBeginInfo));
+
+  VkViewport viewport = initializers::viewport(
+      (float)VkSwapChain.swapChainExtent.width,
+      (float)VkSwapChain.swapChainExtent.height, 0.0f, 1.0f);
+  vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+
+  VkRect2D scissor = initializers::rect2D(
+      static_cast<int32_t>(VkSwapChain.swapChainExtent.width),
+      static_cast<int32_t>(VkSwapChain.swapChainExtent.height), 0, 0);
+  vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+
+  object->object_draw(cmdBuffer);
 
   VK_CHECK_RESULT(vkEndCommandBuffer(cmdBuffer));
 }
 
 std::vector<const char *> VKSky::CImpl::getRequiredExtensions() {
-  // TODO: Учесть возможные расширения
-  std::vector<const char *> extensions = {VK_KHR_SURFACE_EXTENSION_NAME};
+  std::vector<const char *> extensions;
+#ifndef GLFW_LIB_ENABLE
+  extensions.emplace_back(VK_KHR_SURFACE_EXTENSION_NAME);
 #ifdef VK_USE_PLATFORM_WIN32_KHR
   extensions.emplace_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #elif defined(VK_USE_PLATFORM_XCB_KHR)
   extensions.emplace_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
 #elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
   extensions.emplace_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
+#endif
+#else
+  uint32_t extensions_count = 0;
+  const char **glfw_extensions =
+      glfwGetRequiredInstanceExtensions(&extensions_count);
+  for (uint32_t i = 0; i < extensions_count; i++) {
+    extensions.push_back(glfw_extensions[i]);
+    std::cout << "Extension: " << extensions.back();
+  }
 #endif
 #ifdef VULKAN_VALIDATION_LAYERS
   if (!extensions.empty()) {
@@ -512,13 +541,11 @@ std::vector<const char *> VKSky::CImpl::getRequiredExtensions() {
 }
 
 void VKSky::CImpl::submitFrame() {
-  if (paused) {
+  if (paused)
     return;
-  }
 
-  if (vDevice.supportedFeatures.pipelineStatisticsQuery != 0U) {
+  if (vDevice.supportedFeatures.pipelineStatisticsQuery)
     vDevice.getQueryPoolResult();
-}
 
   VkPresentInfoKHR presentInfo{};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -816,82 +843,99 @@ void VKSky::CImpl::buildCommandBuffer() {
     }
 
     vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo,
-                         (threadObjects.empty())
+                         (!thread_prepare_on)
                              ? VK_SUBPASS_CONTENTS_INLINE
                              : VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-    // VK_SUBPASS_CONTENTS_INLINE ,
-    // VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
 
-    if (threadObjects.empty()) {
+    if (!thread_prepare_on) {
       manageViewportDraw(i);
+      drawUI(commandBuffers[i]);
     } else {
       std::unique_lock<std::mutex> lk(mute);
+      uint32_t counter = 0;
+      for (size_t thr_ct = 0; thr_ct < std_objects.size(); thr_ct++) {
+        if (!threadPool.threads[counter].thread->checkStatus()) {
+          threadPool.threads[counter].thread->addJob(
+              [=] { threadRenderFunctionSTD(thr_ct, i, inheritanceInfo); });
 
-      for (uint32_t t = 0; t < threadObjects.size(); t++) {
-        // threadObjects
-        for (uint32_t objNum = 0;
-             objNum < threadObjects.at(t).numOfObjectsInThread; objNum++)
-          threadPool.threads[t]->addJob(
-              [=] { threadRenderFunction(t, objNum, i, inheritanceInfo); });
-      }
-
-      threadPool.wait();
-
-      lk.unlock();
-
-      for (auto &threadObject : threadObjects) {
-        for (uint32_t k = 0; k < threadObject.numOfObjectsInThread; k++) {
-          lcommandBuffers.emplace_back(threadObject.get_cmdBuffer(k, i));
+          counter++;
+          if (counter >= threadPool.threads.size()) {
+            counter = 0;
+          }
+        } else {
+          auto func_counter = [this]() {
+            while (!threadPool.threads.at(0).thread->checkStatus()) {
+              std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+            return 0;
+          };
+          counter = func_counter();
+          // ждем первый доступный поток
         }
       }
-      beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-      beginInfo.pInheritanceInfo = &inheritanceInfo;
-      VK_CHECK_RESULT(vkBeginCommandBuffer(uiCmdBuffer[i], &beginInfo));
-      // Todo: Make Variable
-      //  указывается с учетом расположения на экране в окне
-      VkViewport viewports[2];
-      viewports[0] = {0,
-                      0,
-                      (float)VkSwapChain.swapChainExtent.width / 2.0f,
-                      (float)VkSwapChain.swapChainExtent.height,
-                      0.0,
-                      1.0f};
-      // initializers::viewport((float) VkSwapChain.swapChainExtent.width,
-      //                    (float) VkSwapChain.swapChainExtent.height,
-      //                    0.0f, 1.0f);
-      viewports[1] = {(float)VkSwapChain.swapChainExtent.width / 2.0f,
-                      (float)VkSwapChain.swapChainExtent.width / 2.0f,
-                      (float)(float)VkSwapChain.swapChainExtent.height, 0.0,
-                      1.0f};
-      // initializers::viewport((float) VkSwapChain.swapChainExtent.width,
-      //                   (float) VkSwapChain.swapChainExtent.height,
-      //                   0.0f, 1.0f);
-      vkCmdSetViewport(uiCmdBuffer[i], 0, 2, viewports);
+      threadPool.wait();
 
-      VkRect2D scissorRects[2] = {
-          initializers::rect2D(VkSwapChain.swapChainExtent.width / 2,
-                               VkSwapChain.swapChainExtent.height, 0, 0),
-          initializers::rect2D(VkSwapChain.swapChainExtent.width / 2,
-                               VkSwapChain.swapChainExtent.height,
-                               VkSwapChain.swapChainExtent.width / 2, 0)};
-
-      // auto scissor =
-      // initializers::rect2D(static_cast<int32_t>(VkSwapChain.swapChainExtent.width),
-      //                                     static_cast<int32_t>(VkSwapChain.swapChainExtent.height),
-      //                                     0, 0);
-      vkCmdSetScissor(uiCmdBuffer[i], 0, 2, scissorRects);
-    }
-    // Всегда отображается последним и с последним subpass
-    drawUI((threadObjects.empty()) ? commandBuffers[i]
-                                   : uiCmdBuffer[i]); // commandBuffers[i]);
-
-    if (!threadObjects.empty()) {
-      VK_CHECK_RESULT(vkEndCommandBuffer(uiCmdBuffer[i]));
-
-      lcommandBuffers.emplace_back(uiCmdBuffer[i]);
+      for (auto &threadObject : std_objects) {
+        lcommandBuffers.emplace_back(threadObject->cmdBuffer[i]);
+      }
 
       vkCmdExecuteCommands(commandBuffers[i], lcommandBuffers.size(),
                            lcommandBuffers.data());
+      lcommandBuffers.clear();
+
+      if (!trn_objects.empty()) {
+        vkCmdNextSubpass(commandBuffers[i],
+                         VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+        counter = 0;
+        for (size_t thr_ct = 0; thr_ct < trn_objects.size(); thr_ct++) {
+          if (!threadPool.threads[counter].thread->checkStatus()) {
+            threadPool.threads[counter].thread->addJob(
+                [=] { threadRenderFunctionTRN(thr_ct, i, inheritanceInfo); });
+
+            counter++;
+            if (counter >= threadPool.threads.size()) {
+              counter = 0;
+            }
+          } else {
+            auto func_counter = [this]() {
+              while (!threadPool.threads.at(0).thread->checkStatus()) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+              }
+              return 0;
+            };
+            counter = func_counter();
+            // ждем первый доступный поток
+          }
+        }
+
+        threadPool.wait();
+
+        for (auto &threadObject : trn_objects) {
+          lcommandBuffers.emplace_back(threadObject->cmdBuffer[i]);
+        }
+
+        //* DRAW UI CMDBUFF READY
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+        if (!trn_objects.empty()) {
+          inheritanceInfo.subpass = 1;
+        }
+        beginInfo.pInheritanceInfo = &inheritanceInfo;
+        //**//
+        VK_CHECK_RESULT(vkBeginCommandBuffer(uiCmdBuffer[i], &beginInfo));
+
+        // Всегда отображается последним и с последним subpass
+        drawUI(uiCmdBuffer[i]); // commandBuffers[i]);
+
+        VK_CHECK_RESULT(vkEndCommandBuffer(uiCmdBuffer[i]));
+
+        lcommandBuffers.emplace_back(uiCmdBuffer[i]);
+
+        vkCmdExecuteCommands(commandBuffers[i], lcommandBuffers.size(),
+                             lcommandBuffers.data());
+        lcommandBuffers.clear();
+      }
+
+      lk.unlock();
     }
 
     vkCmdEndRenderPass(commandBuffers[i]);
@@ -940,7 +984,6 @@ void VKSky::CImpl::createCommandPool() {
 }
 
 void VKSky::CImpl::createInstance() {
-
 #ifdef VULKAN_VALIDATION_LAYERS
   if (!checkValidationLayerSupport()) {
     throw std::runtime_error("validation layers requested, but not available!");
@@ -973,14 +1016,24 @@ void VKSky::CImpl::createInstance() {
   createInfo.ppEnabledLayerNames = validationLayers.data();
 
   populateDebugMessengerCreateInfo(debugCreateInfo);
-  createInfo.pNext = (&debugCreateInfo);
+  createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
 #else
   createInfo.enabledLayerCount = 0;
 
   createInfo.pNext = nullptr;
 #endif
 
-  vDevice.createInstance(createInfo);
+  if (vkCreateInstance(&createInfo, vDevice.g_Allocator, &vDevice.instance) !=
+      VK_SUCCESS) {
+    throw std::runtime_error("failed to create instance!");
+  }
+#ifdef QT_LIB_ENABLE
+  //    vDevice.q_instance.setVkInstance(vDevice.instance);
+  //    if(!vDevice.q_instance.create()) {
+  //        throw std::runtime_error("failed to create instance with error code:
+  //        " + std::to_string(vDevice.q_instance.errorCode()));
+  //    }
+#endif
 }
 
 void VKSky::CImpl::initWindow() {
@@ -1148,26 +1201,25 @@ std::vector<VkCommandBuffer> ThreadObject::get_buffers() {
   return commandBuffer;
 }
 
-VKSky::CImpl::CImpl() : numThreads(std::thread::hardware_concurrency()) {
+VKSky::CImpl::CImpl() {
+  numThreads = std::thread::hardware_concurrency();
   assert(numThreads > 0);
-  std::cout << "numThreads = " << numThreads << '\n';
+  std::cout << "numThreads = " << numThreads << std::endl;
   threadPool.setThreadCount(numThreads);
 }
 
 VKSky::CImpl::~CImpl() {
   vDevice.set_quit(true);
-  if (magick_thread.joinable()) {
+  if (magick_thread.joinable())
     magick_thread.join();
-  }
   cleanup();
 }
 
 void VKSky::CImpl::run() { do_magick(); }
 
 void VKSky::CImpl::createAdditinalBuffer() const {
-  for (const auto &obj : all_objects) {
+  for (auto &obj : all_objects)
     obj->createAdditinalBuffer();
-  }
 }
 
 void VKSky::CImpl::acquireBarrier(VkCommandBuffer _buffer) {

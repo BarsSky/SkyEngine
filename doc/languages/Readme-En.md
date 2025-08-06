@@ -57,13 +57,13 @@ To demonstrate the rendering of different objects and support for various OS int
 - [ ] Scene format (json/xml, then binary)
 - [X] Cursor position detection via pixel ownership (shaders + main thread)
 - [X] Primitive classes (line, circle, rectangle)
-  - Line via vertex buffer, circle and rectangle as special cases
-- [ ] Downloadable resources for examples
+- [X] Line via vertex buffer, circle and rectangle as special cases
+- [X] Downloadable resources for examples
   - [ ] Variations for different build types
 - [ ] Doxygen documentation auto-generation via CMake
 - [ ] Scene setup tool
 - [ ] Adaptive object and complex surface generation
-
+  - [ ] Expand the functionality of object formation using heightMap
 ---
 
 ## Screenshots and Examples

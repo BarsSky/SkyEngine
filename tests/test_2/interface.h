@@ -5,6 +5,8 @@
 #ifndef ZUR_Interface_H
 #define ZUR_Interface_H
 
+#include "vk_sky_model.hpp"
+#include <cstddef>
 #include <thread>
 #include <chrono>
 #include <vector>
@@ -155,6 +157,7 @@ private:
   Model *Earth = nullptr;
   Model *Moon = nullptr;
   Model *Sun = nullptr;
+  Terrain_Model * tarrain = nullptr;
   TextOverlay *text_info = nullptr;
   GLTF_Model *modelAnimate = nullptr;
   Partical_Model_GPU *gpu_particle = nullptr;

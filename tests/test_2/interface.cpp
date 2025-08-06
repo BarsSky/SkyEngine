@@ -2,6 +2,8 @@
 // Created by ubuntu on 30.05.24.
 //
 #include "interface.h"
+#include "vk_sky_model.hpp"
+#include "vk_sky_pipelineobject.hpp"
 #include <SkyEngine/config/config.h>
 #include <iomanip>
 #include <sstream>
@@ -58,6 +60,18 @@ void Interface::PrepareAssets() {
   // +"/shader.frag.spv" ,
   //   std::string(SHADER_DIRECTORY) +"/shader.vert.spv"});
 
+  tarrain = static_cast<Terrain_Model *>(createObject(pipelineObject(
+      ePipelineObjectType::TERRIAN_OBJECT,
+      std::string(MODELS_DIRECTORY) + "/terrain_heightmap_r16.ktx")));
+  tarrain->load_textures_paths(
+      {std::string(MODELS_DIRECTORY) + "/terrain_heightmap_r16.png",
+       std::string(MODELS_DIRECTORY) + "/terrain_texturearray_rgba.ktx"});
+  tarrain->load_object_shaders(
+      {std::string(SHADER_DIRECTORY) + "/terrain.vert.spv",
+       std::string(SHADER_DIRECTORY) + "/terrain.frag.spv",
+       std::string(SHADER_DIRECTORY) + "/terrain.tesc.spv",
+       std::string(SHADER_DIRECTORY) + "/terrain.tese.spv"});
+
   SpaceShip = reinterpret_cast<GLTF_Model *>(createObject(
       pipelineObject(ePipelineObjectType::GLTF,
                      std::string(MODELS_DIRECTORY) + "/ColonShip1.glb")));
@@ -71,7 +85,7 @@ void Interface::PrepareAssets() {
   // modelStatic->set_screen_ptr(&screen);//FIXME: DEPRECATED FUNCTION
   SpaceShip->manage_constant.selected_unique_ID = 1;
 
-  for (int i = 1; i < 2; i++) {
+  for (int i = 1; i < 20; i++) {
     GLTF_Model *space = reinterpret_cast<GLTF_Model *>(createObject(
         pipelineObject(ePipelineObjectType::GLTF,
                        std::string(MODELS_DIRECTORY) + "/ColonShip1.glb")));
@@ -303,6 +317,13 @@ void Interface::updateUniformBuffer() {
   sun_position =
       glm::vec4(0.0f, 0.0f, 149597.f, 0.0f); // 149'597'870'700f);//set km
 
+  tarrain->tesselation_ubo.projection = camera.matrices.perspective;
+  tarrain->tesselation_ubo.modelview = camera.matrices.view * glm::mat4(1.0f);
+  tarrain->tesselation_ubo.lightPos.y =
+      -0.5f - tarrain->tesselation_ubo.displacementFactor;
+  tarrain->tesselation_ubo.viewportDim =
+      glm::vec2((float)(*getScreen().uWidth), (float)(*getScreen().uHeight));
+
   Earth->object_ubo.model = glm::mat4(1.f);
   //        Earth->object_ubo.model =
   //        glm::scale(Earth->object_ubo.model,glm::vec3(1000,1000,1000));
@@ -363,8 +384,12 @@ void Interface::updateUniformBuffer() {
     ubo.viewPos = camera.viewPos;
     for (int i = 0; i < size_nodes; ++i) {
       ubo.model = baseModel;
-      ubo.unique_id = glm::vec4{1, i + 1, 0, 0};/// TODO: Вынести назначение подобекта в момент формирования модели 
-      ship->updateUBO(&ship->gltf_ubo, i);/// TODO: Учитывать позицию остальных объектов относительно родительского
+      ubo.unique_id =
+          glm::vec4{1, i + 1, 0, 0}; /// TODO: Вынести назначение подобекта в
+                                     /// момент формирования модели
+      ship->updateUBO(&ship->gltf_ubo,
+                      i); /// TODO: Учитывать позицию остальных объектов
+                          /// относительно родительского
     }
   }
 

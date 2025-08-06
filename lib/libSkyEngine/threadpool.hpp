@@ -1,122 +1,119 @@
 /*
-* Basic C++11 based thread pool with per-thread job queues
-*
-* Copyright (C) 2016 by Sascha Willems - www.saschawillems.de
-*
-* This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
-*/
+ * Basic C++11 based thread pool with per-thread job queues
+ *
+ * Copyright (C) 2016 by Sascha Willems - www.saschawillems.de
+ *
+ * This code is licensed under the MIT license (MIT)
+ * (http://opensource.org/licenses/MIT)
+ */
 #pragma once
-#include <vector>
-#include <thread>
-#include <queue>
-#include <mutex>
 #include <condition_variable>
 #include <functional>
+#include <mutex>
+#include <queue>
+#include <thread>
+#include <vector>
 
 // make_unique is not available in C++11
 // Taken from Herb Sutter's blog (https://herbsutter.com/gotw/_102/)
 #if __cplusplus <= 201103L && __linux__
-template<typename T, typename ...Args>
-std::unique_ptr<T> make_unique(Args&& ...args)
-{
-	return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+template <typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args &&...args) {
+  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 #endif
-namespace vks
-{
-	class Thread
-	{
-	private:
-		bool destroying = false;
-		std::thread worker;
-		std::queue<std::function<void()>> jobQueue;
-		std::mutex queueMutex;
-		std::condition_variable condition;
+namespace vks {
+class Thread {
+private:
+  bool destroying = false;
+  std::thread worker;
+  std::queue<std::function<void()>> jobQueue;
+  std::mutex queueMutex;
+  std::condition_variable condition;
+  bool isBusy = false;
 
-		// Loop through all remaining jobs
-		void queueLoop()
-		{
-			while (true)
-			{
-				std::function<void()> job;
-				{
-					std::unique_lock<std::mutex> lock(queueMutex);
-					condition.wait(lock, [this] { return !jobQueue.empty() || destroying; });
-					if (destroying)
-					{
-						break;
-					}
-					job = jobQueue.front();
-				}
+  // Loop through all remaining jobs
+  void queueLoop() {
+    while (true) {
+      std::function<void()> job;
+      {
+        std::unique_lock<std::mutex> lock(queueMutex);
+        condition.wait(lock,
+                       [this] { return !jobQueue.empty() || destroying; });
+        if (destroying) {
+          break;
+        }
+        job = jobQueue.front();
+      }
 
-				job();
+      job();
 
-				{
-					std::lock_guard<std::mutex> lock(queueMutex);
-					jobQueue.pop();
-					condition.notify_one();
-				}
-			}
-		}
+      {
+        std::lock_guard<std::mutex> lock(queueMutex);
+        jobQueue.pop();
+        condition.notify_one();
+      }
+    }
+  }
 
-	public:
-		Thread()
-		{
-			worker = std::thread(&Thread::queueLoop, this);
-		}
+public:
+  Thread() { worker = std::thread(&Thread::queueLoop, this); }
 
-		~Thread()
-		{
-			if (worker.joinable())
-			{
-				wait();
-				queueMutex.lock();
-				destroying = true;
-				condition.notify_one();
-				queueMutex.unlock();
-				worker.join();
-			}
-		}
+  ~Thread() {
+    if (worker.joinable()) {
+      wait();
+      queueMutex.lock();
+      destroying = true;
+      condition.notify_one();
+      queueMutex.unlock();
+      worker.join();
+    }
+  }
 
-		// Add a new job to the thread's queue
-		void addJob(std::function<void()> function)
-		{
-			std::lock_guard<std::mutex> lock(queueMutex);
-			jobQueue.push(std::move(function));
-			condition.notify_one();
-		}
+  auto checkStatus() const -> bool { return isBusy; }
 
-		// Wait until all work items have been finished
-		void wait()
-		{
-			std::unique_lock<std::mutex> lock(queueMutex);
-			condition.wait(lock, [this]() { return jobQueue.empty(); });
-		}
-	};
-	
-	class ThreadPool
-	{
-	public:
-		std::vector<std::unique_ptr<Thread>> threads;
+  // Add a new job to the thread's queue
+  void addJob(std::function<void()> function) {
+    std::lock_guard<std::mutex> lock(queueMutex);
+    jobQueue.push(std::move(function));
+    condition.notify_one();
+  }
 
-		// Sets the number of threads to be allocated in this pool
-		void setThreadCount(uint32_t count)
-		{
-			threads.clear();
-			for (auto i = 0; i < count; i++)
-			{
-				threads.push_back(make_unique<Thread>());
-			}
-		}
+  // Wait until all work items have been finished
+  void wait() {
+    isBusy = true;
+    std::unique_lock<std::mutex> lock(queueMutex);
+    condition.wait(lock, [this]() { return jobQueue.empty(); });
+    isBusy = false;
+  }
+};
 
-		// Wait until all threads have finished their work items
-		void wait()
-		{
-			for (auto &thread : threads)
-			{
-				thread->wait();
-			}
-		}
-	};
+class ThreadPool {
+public:
+  struct keyThreads {
+    std::unique_ptr<Thread> thread;
+    uint32_t key;
+    bool isBusy;
+  };
+  std::vector<keyThreads> threads;
+  // добавить маркер на свободные потоки для последующего их заполнения на
+  // работу
 
-}
+  // Sets the number of threads to be allocated in this pool
+  void setThreadCount(uint32_t count) {
+    threads.clear();
+    for (uint32_t i = 0; i < count; i++) {
+      threads.push_back({std::make_unique<Thread>(), i, false});
+    }
+  }
+
+  // Wait until all threads have finished their work items
+  void wait() {
+    for (auto &thread : threads) {
+      thread.thread->wait();
+      thread.isBusy = false;
+    }
+  }
+};
+
+} // namespace vks

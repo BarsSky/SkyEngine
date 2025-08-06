@@ -361,8 +361,10 @@ protected:
   //
   void prepareMultiThreadRender();
 
-  void threadRenderFunction(uint32_t threadIndex, uint32_t object_index, uint32_t bufferCount,
-                            VkCommandBufferInheritanceInfo inheritanceInfo);
+  void threadRenderFunctionSTD(uint32_t threadIndex, uint32_t bufferCount,
+                               VkCommandBufferInheritanceInfo inheritanceInfo);
+  void threadRenderFunctionTRN(uint32_t threadIndex, uint32_t bufferCount,
+                               VkCommandBufferInheritanceInfo inheritanceInfo);
 
   // Frame counter to display fps
   uint32_t frameCounter = 0;
@@ -424,6 +426,7 @@ protected:
   ObjCamera *camera{};
   //
   bool m_signalFrame = false;
+  bool thread_prepare_on = true;
 #ifdef GLFW_LIB_ENABLE
   struct UI_param
   {

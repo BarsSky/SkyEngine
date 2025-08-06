@@ -1,16 +1,34 @@
 //
 // Created by ubuntu on 31.07.24.
 //
-#include <SkyEngine/vk_sky_object.hpp>
-#include <SkyEngine/vk_sky_device.hpp>
 #include "tools.hpp"
+#include <SkyEngine/vk_sky_device.hpp>
+#include <SkyEngine/vk_sky_object.hpp>
+#include <vulkan/vulkan_core.h>
 
-Object::Object() {
-  u_ptr_compute = std::make_unique<ComputeInst>();
+Object::Object() { u_ptr_compute = std::make_unique<ComputeInst>(); }
+
+void Object::generateCommandBuffer() {
+  // Create one command pool for each thread
+  VkCommandPoolCreateInfo cmdPoolInfo = initializers::commandPoolCreateInfo();
+  cmdPoolInfo.queueFamilyIndex = vDevice->queueFamilyIndices.graphics;
+  cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+  VK_CHECK_RESULT(vkCreateCommandPool(vDevice->logicalDevice, &cmdPoolInfo,
+                                      nullptr, &threadCommandPool));
+
+  // One secondary command buffer per object that is updated by this thread
+  cmdBuffer.resize(vDevice->getImageCount());
+  // Generate secondary command buffers for each thread
+  VkCommandBufferAllocateInfo secondaryCmdBufAllocateInfo =
+      initializers::commandBufferAllocateInfo(threadCommandPool,
+                                              VK_COMMAND_BUFFER_LEVEL_SECONDARY,
+                                              cmdBuffer.size());
+  VK_CHECK_RESULT(vkAllocateCommandBuffers(
+      vDevice->logicalDevice, &secondaryCmdBufAllocateInfo, cmdBuffer.data()));
 }
 
 void Object::setObjectShaders() {
-  for (auto &path: shaders_paths) {
+  for (auto &path : shaders_paths) {
     VkShaderStageFlagBits flag = VK_SHADER_STAGE_VERTEX_BIT;
     auto array = tools::split(path, std::string("."));
     if (array.at(array.size() - 2) == "vert")
@@ -38,14 +56,16 @@ std::vector<VkPipelineShaderStageCreateInfo> Object::getShaderStages() const {
   return shadersStages;
 }
 
-void Object::setEngineDepends(VulkanDevice *device, VulkanSwapChain *swapChain) {
+void Object::setEngineDepends(VulkanDevice *device,
+                              VulkanSwapChain *swapChain) {
   vDevice = device;
   vSwapChain = swapChain;
   u_ptr_compute->set_device(vDevice);
+  generateCommandBuffer();
 }
 
 void Object::destroyShaderModules() {
-  for (auto &module: shaderModules)
+  for (auto &module : shaderModules)
     vkDestroyShaderModule(vDevice->logicalDevice, module, nullptr);
 }
 
@@ -53,21 +73,18 @@ std::vector<VkShaderModule> Object::getShaderModules() const {
   return shaderModules;
 }
 
-VkPipelineLayout Object::get_pipeline_layout() {
-  return pipelineLayout;
-}
+VkPipelineLayout Object::get_pipeline_layout() { return pipelineLayout; }
 
 VkDescriptorSetLayout Object::get_descriptor_set_layout() {
   return descriptorSetLayout;
 }
 
-VkDescriptorSet Object::get_descriptor_set() {
-  return descriptor;
-}
+VkDescriptorSet Object::get_descriptor_set() { return descriptor; }
 
 Object::~Object() {
-  for (auto &texture: textures)
+  for (auto &texture : textures) {
     delete texture;
+  }
 }
 
 void Object::cleanObjectSwapChain() {
@@ -79,8 +96,8 @@ void Object::cleanObjectSwapChain() {
   vkDestroyImage(vDevice->logicalDevice, colorImage, nullptr);
   vkFreeMemory(vDevice->logicalDevice, colorImageMemory, nullptr);
 
-  for (size_t i = 0; i < frameBuffer.size(); i++) {
-    vkDestroyFramebuffer(vDevice->logicalDevice, frameBuffer.at(i), nullptr);
+  for (auto &i : frameBuffer) {
+    vkDestroyFramebuffer(vDevice->logicalDevice, i, nullptr);
   }
 }
 
@@ -89,25 +106,18 @@ void Object::load_textures_paths(std::vector<std::string> paths) {
 }
 
 void Object::object_destroy() {
+  clearThreadChildObjects();
   clearUniqueBuffers();
   destroy();
 }
 
-glm::vec3 Object::position() {
-  return {*x, *y, *z};
-}
+glm::vec3 Object::position() { return {*x, *y, *z}; }
 
-glm::vec3 Object::rotation_axis() {
-  return {*omega_x, *omega_y, *omega_z};
-}
+glm::vec3 Object::rotation_axis() { return {*omega_x, *omega_y, *omega_z}; }
 
-float Object::rotation_speed() {
-  return *omega_w;
-}
+float Object::rotation_speed() { return *omega_w; }
 
-void Object::set_rotation_angle(float *angle) {
-  omega_w = angle;
-}
+void Object::set_rotation_angle(float *angle) { omega_w = angle; }
 
 void Object::set_track(float *x, float *y, float *z) {
   this->x = x;
@@ -128,15 +138,16 @@ void Object::set_rotate_track(float *x, float *y, float *z, float *w) {
   this->omega_w = w;
 }
 
-VkPipelineShaderStageCreateInfo Object::LoadShader(const std::string &filename, VkShaderStageFlagBits stage) {
+VkPipelineShaderStageCreateInfo
+Object::LoadShader(const std::string &filename, VkShaderStageFlagBits stage) {
   //
   std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
   if (!file.is_open()) {
-    throw std::runtime_error("failed to open file!");
+    throw std::runtime_error("failed to open file " + filename + " !");
   }
 
-  size_t fileSize = (size_t) file.tellg();
+  size_t fileSize = (size_t)file.tellg();
   std::vector<char> code(fileSize);
 
   file.seekg(0);
@@ -150,12 +161,14 @@ VkPipelineShaderStageCreateInfo Object::LoadShader(const std::string &filename, 
   createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
 
   VkShaderModule shaderModule;
-  if (vkCreateShaderModule(vDevice->logicalDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+  if (vkCreateShaderModule(vDevice->logicalDevice, &createInfo, nullptr,
+                           &shaderModule) != VK_SUCCESS) {
     throw std::runtime_error("failed to create shader module!");
   }
 
   VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
-  vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+  vertShaderStageInfo.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
   vertShaderStageInfo.stage = stage;
   vertShaderStageInfo.module = shaderModule;
   vertShaderStageInfo.pName = "main";
@@ -168,53 +181,48 @@ VkPipelineShaderStageCreateInfo Object::LoadShader(const std::string &filename, 
 void Object::createUniqueBuffers() {
   VkDeviceSize bufferSize = sizeof(uint32_t) * DEPTH_ARRAY_SCALE;
   vDevice->createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                         &pickObjectBuffer);
   pickObjectBuffer.map(bufferSize);
 
-  memset(pickObjectBuffer.mapped, 0, (size_t) bufferSize);
+  memset(pickObjectBuffer.mapped, 0, (size_t)bufferSize);
   pickObjectBuffer.unmap();
 }
 
 void Object::clearUniqueBuffers() {
   pickObjectBuffer.destroy();
-  vkDestroyDescriptorSetLayout(vDevice->logicalDevice,pickDescriptorSetLayout,nullptr);
+  vkDestroyDescriptorSetLayout(vDevice->logicalDevice, pickDescriptorSetLayout,
+                               nullptr);
 }
 
 void Object::drawObjectBase(VkCommandBuffer _buffer) {
-
   /// Set SSBO buffer what placed in set = 0 and binding 0
-  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &pickDescriptor,
-                          0, nullptr);
+  vkCmdBindDescriptorSets(_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          pipelineLayout, 0, 1, &pickDescriptor, 0, nullptr);
 }
 
 void Object::createObjectBaseDescriptor() {
-
   VkDescriptorSetAllocateInfo allocInfo =
-      initializers::descriptorSetAllocateInfo(
-        descriptorPool,
-        &pickDescriptorSetLayout,
-        1);
+      initializers::descriptorSetAllocateInfo(descriptorPool,
+                                              &pickDescriptorSetLayout, 1);
 
   // ATTENTION: For each layer of set need unique descriptor to set
-  VK_CHECK_RESULT(vkAllocateDescriptorSets(vDevice->logicalDevice, &allocInfo, &pickDescriptor));
+  VK_CHECK_RESULT(vkAllocateDescriptorSets(vDevice->logicalDevice, &allocInfo,
+                                           &pickDescriptor));
 
-  std::vector<VkWriteDescriptorSet> pickWriteDescriptorSets =
-  {
-    // Binding 0 : Particle position storage buffer
-    initializers::writeDescriptorSet(
-      pickDescriptor,
-      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-      0,
-      &pickObjectBuffer.descriptor)
-  };
+  std::vector<VkWriteDescriptorSet> pickWriteDescriptorSets = {
+      // Binding 0 : Particle position storage buffer
+      initializers::writeDescriptorSet(pickDescriptor,
+                                       VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 0,
+                                       &pickObjectBuffer.descriptor)};
 
-  vkUpdateDescriptorSets(vDevice->logicalDevice, static_cast<uint32_t>(pickWriteDescriptorSets.size()),
+  vkUpdateDescriptorSets(vDevice->logicalDevice,
+                         static_cast<uint32_t>(pickWriteDescriptorSets.size()),
                          pickWriteDescriptorSets.data(), 0, nullptr);
 }
 
 void Object::createObjectBasePool() {
-
   // Make increase pool in scene
 
   vkPoolSizes.emplace_back();
@@ -230,64 +238,68 @@ void Object::allocateDescriptorPool() {
   poolInfo.pPoolSizes = vkPoolSizes.data();
   poolInfo.maxSets = poolDrawSize;
 
-  if (vkCreateDescriptorPool(vDevice->logicalDevice, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
+  if (vkCreateDescriptorPool(vDevice->logicalDevice, &poolInfo, nullptr,
+                             &descriptorPool) != VK_SUCCESS) {
     throw std::runtime_error("failed to create descriptor pool!");
   }
 }
 
 void Object::setObjectBaseLayout() {
-
   std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
-    // Binding 0 : Particle position storage buffer
-    initializers::descriptorSetLayoutBinding(
-      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-      VK_SHADER_STAGE_FRAGMENT_BIT,
-      0)
-  };
+      // Binding 0 : Particle position storage buffer
+      initializers::descriptorSetLayoutBinding(
+          VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 0)};
 
   VkDescriptorSetLayoutCreateInfo layoutInfo{};
   layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
   layoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
   layoutInfo.pBindings = setLayoutBindings.data();
   //
-  if (vkCreateDescriptorSetLayout(vDevice->logicalDevice, &layoutInfo, nullptr, &pickDescriptorSetLayout) !=
-      VK_SUCCESS) {
+  if (vkCreateDescriptorSetLayout(vDevice->logicalDevice, &layoutInfo, nullptr,
+                                  &pickDescriptorSetLayout) != VK_SUCCESS) {
     throw std::runtime_error("failed to create descriptor set layout!");
-      }
+  }
 
   vkDescriptorLayouts.emplace_back(pickDescriptorSetLayout);
+}
+
+bool Object::prepareViewPort() {
+  // Берем указатель на viewport для данного объекта
+  return true;
+}
+
+void Object::clearThreadChildObjects() {
+  //// Remove Thread
+  vkFreeCommandBuffers(vDevice->logicalDevice, threadCommandPool,
+                       static_cast<uint32_t>(cmdBuffer.size()),
+                       cmdBuffer.data());
+
+  vkDestroyCommandPool(vDevice->logicalDevice, threadCommandPool, nullptr);
 }
 
 void Object::createPipelineCache() {
   VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
   pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-  if (vkCreatePipelineCache(vDevice->logicalDevice, &pipelineCacheCreateInfo, nullptr, &pipelineCache)) {
+  if (vkCreatePipelineCache(vDevice->logicalDevice, &pipelineCacheCreateInfo,
+                            nullptr, &pipelineCache)) {
     throw std::runtime_error("failed too create pipeline cache");
   }
 }
 
-void Object::clearComputeBlock() {
-}
+void Object::clearComputeBlock() {}
 
 VkCommandBuffer *Object::getComputeBuffer() const {
   return &u_ptr_compute->commandBuffer;
 }
 
-VkQueue Object::getComputeQueue() const {
-  return u_ptr_compute->queue;
-}
+VkQueue Object::getComputeQueue() const { return u_ptr_compute->queue; }
 
 VkSemaphore *Object::getGraphicSemaphore() const {
   return &u_ptr_compute->graphic;
 }
 
-void Object::readShaderData() {
-}
+void Object::readShaderData() {}
 
-void Object::setVisibleProperty(bool flag) {
-  is_object_visible = flag;
-}
+void Object::setVisibleProperty(bool flag) { is_object_visible = flag; }
 
-VkSemaphore *Object::getComputeSemaphore() {
-  return &u_ptr_compute->compute;
-}
+VkSemaphore *Object::getComputeSemaphore() { return &u_ptr_compute->compute; }

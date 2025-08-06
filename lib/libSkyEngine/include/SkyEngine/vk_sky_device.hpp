@@ -1,20 +1,13 @@
-/**
- * @file vk_sky_device.hpp
- * @brief Класс и структуры для управления Vulkan-устройством и абстракцией окна (GLFW/Qt).
- * @details
- *  - Обеспечивает инициализацию Vulkan, создание surface, swapchain, управление памятью и очередями.
- *  - Поддерживает кроссплатформенную работу с окнами через Qt или GLFW.
- *  - Содержит вспомогательные методы для работы с буферами, рендер-проходами, семафорами и статистикой пайплайна.
- *
- * @author (c) SkyEngineBase
- * @date 2024
- */
-
 #pragma once
 
 #include <SkyEngine/config/config.h>
-#include <memory>
+
 #include <vulkan/vulkan.h>
+
+#ifdef VK_USE_PLATFORM_XCB_KHR
+
+#include <xcb/xcb.h>
+#endif
 
 #ifdef QT_LIB_ENABLE
 
@@ -22,248 +15,238 @@
 // #include <QGuiApplication>
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
-
-#include <xcb/xcb.h>
 #include <QX11Info>
-
 #endif
+
 #else
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #endif
 
+#include <set>
 //
 
 #include <SkyEngine/export_import_magick.h>
 #include <SkyEngine/qt_plugin/vkwidget.h>
 #include <SkyEngine/vk_sky_buffer.hpp>
 
-/**
- * @struct SwapChainSupportDetails
- * @brief Описывает параметры поддержки swapchain для выбранного физического устройства.
- */
-struct SwapChainSupportDetails
-{
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
+struct SwapChainSupportDetails {
+  VkSurfaceCapabilitiesKHR capabilities;
+  std::vector<VkSurfaceFormatKHR> formats;
+  std::vector<VkPresentModeKHR> presentModes;
 };
 
-/**
- * @class VulkanDevice
- * @brief Основной класс управления Vulkan-устройством, swapchain, очередями и окнами.
- * @details
- *  - Инкапсулирует создание и управление Vulkan instance, physical/logical device, очередями, swapchain, surface.
- *  - Предоставляет методы для работы с буферами, командными пулами, семафорами, статистикой пайплайна и интеграцией с окнами (GLFW/Qt).
- *  - Поддерживает кроссплатформенность и расширяемость.
- */
-class LIBSKYENGINE_EXPORT VulkanDevice
-{
+class LIBSKYENGINE_EXPORT VulkanDevice {
 public:
-    // #ifdef QT_LIB_ENABLE
-    //     QVulkanInstance q_instance;
-    // #endif
+  SwapChainSupportDetails swapChainSupport;
 
-    const SwapChainSupportDetails& getSwapChainSupport() const { return swapChainSupport; }
+  // #ifdef QT_LIB_ENABLE
+  //     QVulkanInstance q_instance;
+  // #endif
+  VkInstance instance;
 
-    VkQueue queue;
-    //
-    VkRenderPass renderPass;
+  VkQueue queue;
+  //
+  VkRenderPass renderPass;
 
-    //
-    VkAllocationCallbacks *g_Allocator = nullptr;
-    // Qeuery pool
-    VkQueryPool queryPool = VK_NULL_HANDLE;
-    /** @brief Physical device representation */
-    VkPhysicalDevice physicalDevice;
-    /** @brief Logical device representation (application's view of the device) */
-    VkDevice logicalDevice;
-    /** @brief Properties of the physical device including limits that the application can check against */
-    VkPhysicalDeviceProperties physicalDeviceProperties;
-    /** @brief Features of the physical device that an application can use to check if a feature is supported */
-    VkPhysicalDeviceFeatures features;
-    /** @brief Features that have been enabled for use on the physical device */
-    VkPhysicalDeviceFeatures enabledFeatures;
-    /** @brief Memory types and heaps of the physical device */
-    VkPhysicalDeviceMemoryProperties memoryProperties;
-    /** @brief Queue family properties of the physical device */
-    std::vector<VkQueueFamilyProperties> queueFamilyProperties;
-    /** @brief List of extensions supported by the device */
-    std::vector<std::string> supportedExtensions;
-    /** @brief Default command pool for the graphics queue family index */
-    VkCommandPool commandPool = VK_NULL_HANDLE;
-    /** @brief Set to true when the debug marker extension is detected */
-    bool enableDebugMarkers = false;
-    /** @brief Contains queue family indices */
+  //
+  VkAllocationCallbacks *g_Allocator = nullptr;
+  // Qeuery pool
+  VkQueryPool queryPool = VK_NULL_HANDLE;
+  /** @brief Physical device representation */
+  VkPhysicalDevice physicalDevice;
+  /** @brief Logical device representation (application's view of the device) */
+  VkDevice logicalDevice;
+  /** @brief Properties of the physical device including limits that the
+   * application can check against */
+  VkPhysicalDeviceProperties physicalDeviceProperties;
+  /** @brief Features of the physical device that an application can use to
+   * check if a feature is supported */
+  VkPhysicalDeviceFeatures features;
+  /** @brief Features that have been enabled for use on the physical device */
+  VkPhysicalDeviceFeatures enabledFeatures;
+  /** @brief Memory types and heaps of the physical device */
+  VkPhysicalDeviceMemoryProperties memoryProperties;
+  /** @brief Queue family properties of the physical device */
+  std::vector<VkQueueFamilyProperties> queueFamilyProperties;
+  /** @brief List of extensions supported by the device */
+  std::vector<std::string> supportedExtensions;
+  /** @brief Default command pool for the graphics queue family index */
+  VkCommandPool commandPool = VK_NULL_HANDLE;
+  /** @brief Set to true when the debug marker extension is detected */
+  bool enableDebugMarkers = false;
+  /** @brief Contains queue family indices */
 
-    // for window
-    // TODO: Вынести на другие механизмы определения размеров окна
-    // Унифицировать из
-    //    int getWidth() const;
-    //    int getHeight() const;
-    int *Width() const;
-    int *Height() const;
-    uint32_t *uWidth() const;
-    uint32_t *uHeight() const;
-    bool qiut();
-    void set_quit(bool flag);
+  // for window
+  // TODO: Вынести на другие механизмы определения размеров окна
+  // Унифицировать из
+  //    int getWidth() const;
+  //    int getHeight() const;
+  int *Width() const;
+  int *Height() const;
+  uint32_t *uWidth() const;
+  uint32_t *uHeight() const;
+  bool qiut();
+  void set_quit(bool flag);
 
 #ifdef GLFW_LIB_ENABLE
-  GLFWwindow * get_glfw_window_ptr();
+  GLFWwindow *get_glfw_window_ptr();
 
   void switchFullScreen();
 #endif
 
 #ifdef __linux__
-    xcb_connection_t *get_connection() const;
+  xcb_connection_t *get_connection() const;
 #endif
 #ifdef QT_LIB_ENABLE
-    VkWidget *init_widget(QWidget *parent);
-    // bool framebufferResized = false;
+  VkWidget *init_widget(QWidget *parent);
+  // bool framebufferResized = false;
 #endif
-    operator VkDevice() const
-    {
-        return logicalDevice;
-    };
+  operator VkDevice() const { return logicalDevice; };
 
-    VkPhysicalDevice getPhysicalDevice()
-    {
-        return physicalDevice;
-    }
+  VkPhysicalDevice getPhysicalDevice() { return physicalDevice; }
 
-    explicit VulkanDevice();
+  explicit VulkanDevice();
 
-    VulkanDevice(const VulkanDevice &) = delete;
-    VulkanDevice(VulkanDevice &&) = delete;
-    VulkanDevice &operator=(const VulkanDevice &) = delete;
-    VulkanDevice &operator=(VulkanDevice &&) = delete;
-    ~VulkanDevice();
+  ~VulkanDevice();
 
-    bool isDeviceSuitable(VkPhysicalDevice device);
+  bool isDeviceSuitable(VkPhysicalDevice device);
 
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+  bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
-    // QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice);
+  // QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+  SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice);
 
-    VkSampleCountFlagBits getMaxUsableSampleCount();
+  VkSampleCountFlagBits getMaxUsableSampleCount();
 
-    void pickPhysicalDevice();
+  void pickPhysicalDevice();
 
-    bool QueueFamilyProperties();
+  bool QueueFamilyProperties();
 
-    VkCommandBuffer beginSingleTimeCommands(VkCommandBufferLevel level, VkCommandPool pool, bool begin);
+  VkCommandBuffer beginSingleTimeCommands(VkCommandBufferLevel level,
+                                          VkCommandPool pool, bool begin);
 
-    VkCommandBuffer beginSingleTimeCommands(VkCommandBufferLevel level, bool begin = true);
+  VkCommandBuffer beginSingleTimeCommands(VkCommandBufferLevel level,
+                                          bool begin = true);
 
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+  void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool pool, bool free = true);
+  void endSingleTimeCommands(VkCommandBuffer commandBuffer, VkQueue queue,
+                             VkCommandPool pool, bool free = true);
 
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer, VkQueue queue, bool free = true);
+  void endSingleTimeCommands(VkCommandBuffer commandBuffer, VkQueue queue,
+                             bool free = true);
 
-    VkResult
-    createLogicalDevice(std::vector<const char *> enabledExtensions, void *pNextChain, bool useSwapChain = true,
-                        VkQueueFlags requestedQueueTypes = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+  VkResult
+  createLogicalDevice(std::vector<const char *> enabledExtensions,
+                      void *pNextChain, bool useSwapChain = true,
+                      VkQueueFlags requestedQueueTypes = VK_QUEUE_GRAPHICS_BIT |
+                                                         VK_QUEUE_COMPUTE_BIT);
 
-    VkFormat
-    findSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+  VkFormat findSupportedFormat(const std::vector<VkFormat> &candidates,
+                               VkImageTiling tiling,
+                               VkFormatFeatureFlags features);
 
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+  uint32_t findMemoryType(uint32_t typeFilter,
+                          VkMemoryPropertyFlags properties);
 
-    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
-    VkSurfaceKHR surface;
+  VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+  VkSurfaceKHR surface;
 
-    void createSurface();
-    
-    void createInstance(VkInstanceCreateInfo createInfo);
+  void createSurface();
 
-    bool beClosed();
+  bool beClosed();
 
-    void windowFrameBuffer();
+  void windowFrameBuffer();
 
-    void createRenderPass();
+  void createRenderPass();
 
-    void setupQueryResultBuffer();
+  void setupQueryResultBuffer();
 
-    void getQueryPoolResult();
+  void getQueryPoolResult();
 
-    void getEnabledFeatures();
+  void getEnabledFeatures();
 
-    void clearQueryPool();
+  void clearQueryPool();
 
-    VkCommandPool createCommandPool(uint32_t queueFamilyIndex,
-                                    VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+  void setImageCount(uint32_t _count);
 
-    VkPhysicalDeviceFeatures supportedFeatures;
+  auto getImageCount() const -> uint32_t;
 
-    VkFormat findDepthFormat();
+  VkCommandPool
+  createCommandPool(uint32_t queueFamilyIndex,
+                    VkCommandPoolCreateFlags createFlags =
+                        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
-    void initWindow(std::string app_name
+  VkPhysicalDeviceFeatures supportedFeatures;
+
+  VkFormat findDepthFormat();
+
+  void initWindow(std::string app_name
 #ifdef QT_LIB_ENABLE
-                    ,
-                    QWidget *widget = nullptr
+                  ,
+                  QWidget *widget = nullptr
 #endif
-    );
+  );
 
-    uint32_t getMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties);
+  uint32_t getMemoryTypeIndex(uint32_t typeBits,
+                              VkMemoryPropertyFlags properties);
 
-    uint32_t getQueueFamilyIndex(VkQueueFlags queueFlags) const;
+  uint32_t getQueueFamilyIndex(VkQueueFlags queueFlags) const;
 
-    VkResult
-    createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, enma::Buffer *buffer,
-                 void *data = nullptr); // VkBuffer &buffer, VkDeviceMemory &bufferMemory);
-    VkResult
-    createBuffer(VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer *buffer, VkDeviceSize size,
-                 VkDeviceMemory *memory, void *data = nullptr);
+  VkResult createBuffer(
+      VkDeviceSize size, VkBufferUsageFlags usage,
+      VkMemoryPropertyFlags properties, enma::Buffer *buffer,
+      void *data = nullptr); // VkBuffer &buffer, VkDeviceMemory &bufferMemory);
+  VkResult createBuffer(VkBufferUsageFlags usage,
+                        VkMemoryPropertyFlags properties, VkBuffer *buffer,
+                        VkDeviceSize size, VkDeviceMemory *memory,
+                        void *data = nullptr);
 
-    VkResult
-    createBuffer(VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, enma::Buffer *buffer, VkDeviceSize size,
-                 VkDeviceMemory *memory, void *data = nullptr);
+  VkResult createBuffer(VkBufferUsageFlags usage,
+                        VkMemoryPropertyFlags properties, enma::Buffer *buffer,
+                        VkDeviceSize size, VkDeviceMemory *memory,
+                        void *data = nullptr);
 
-    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t depth = 1);
+  void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
+                         uint32_t height, uint32_t depth = 1);
 
-    uint32_t getMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32 *memTypeFound = nullptr) const;
+  uint32_t getMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties,
+                         VkBool32 *memTypeFound = nullptr) const;
 
-    bool framebufferResized = false;
+  bool framebufferResized = false;
 
-    bool ready_to_close = false;
+  bool ready_to_close = false;
 
-    // Pipeline statistic
-    struct
-    {
-        VkBuffer buffer;
-        VkDeviceMemory memory;
-    } queryResult;
+  // Pipeline statistic
+  struct {
+    VkBuffer buffer;
+    VkDeviceMemory memory;
+  } queryResult;
 
-    struct
-    {
-        uint32_t graphics;
-        uint32_t compute;
-        uint32_t transfer;
-    } queueFamilyIndices;
+  struct {
+    uint32_t graphics;
+    uint32_t compute;
+    uint32_t transfer;
+  } queueFamilyIndices;
 
-    struct
-    {
-        VkSemaphore presentComplete;
-        VkSemaphore renderComplete;
-    } semaphores;
+  struct {
+    VkSemaphore presentComplete;
+    VkSemaphore renderComplete;
+  } semaphores;
 
-    uint64_t pipelineStats[2] = {0};
+  uint64_t pipelineStats[2] = {0};
 
-    class Window_Impl;
+  class Window_Impl;
 
-    auto getInstance() const -> VkInstance
-    {
-        return instance;
-    }
 private:
-    VkInstance instance;
-    SwapChainSupportDetails swapChainSupport;
-    std::unique_ptr<Window_Impl> u_ptr_window;
-#ifdef GLFW_LIB_ENABLE
-    static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
+  std::unique_ptr<Window_Impl> u_ptr_window;
+  uint32_t imageCount;
 
-    static void shouldCloseCallback(GLFWwindow *window);
+#ifdef GLFW_LIB_ENABLE
+  static void framebufferResizeCallback(GLFWwindow *window, int width,
+                                        int height);
+
+  static void shouldCloseCallback(GLFWwindow *window);
 #endif
 };

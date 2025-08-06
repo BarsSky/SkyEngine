@@ -826,6 +826,81 @@ struct LIBSKYENGINE_EXPORT Terrain_Model final : public Model {
       VkImageViewType type = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D) override;
 
   void createAdditinalBuffer() override;
+
+private:
+  bool tesselation = false;
+
+  struct Vertex {
+    glm::vec3 pos;
+    glm::vec3 normal;
+    glm::vec2 uv;
+  };
+
+  // heightmap — массив float размером width*height
+
+  void buildSphereWithHeightmap(int width, int height, float R, float hScale,
+                                const std::vector<float> &heightmap,
+                                std::vector<Vertex> &vertices,
+                                std::vector<uint32_t> &indices) {
+    vertices.clear();
+    indices.clear();
+    vertices.reserve(width * height);
+    indices.reserve((width - 1) * (height - 1) * 6);
+
+    // 1. Вершины с UV
+    for (int j = 0; j < height; ++j) {
+      float v = float(j) / (height - 1);
+      float θ = v * M_PI;
+
+      for (int i = 0; i < width; ++i) {
+        float u = float(i) / (width - 1);
+        float φ = u * 2.0f * M_PI;
+
+        float x = sin(θ) * cos(φ);
+        float y = cos(θ);
+        float z = sin(θ) * sin(φ);
+
+        float h = heightmap[j * width + i] * hScale;
+        glm::vec3 pos = glm::vec3(x, y, z) * (R + h);
+        vertices.push_back({pos, glm::vec3(0), glm::vec2(u, v)});
+      }
+    }
+
+    // 2. Нормали
+    for (int j = 0; j < height; ++j) {
+      for (int i = 0; i < width; ++i) {
+        int iL = std::max(i - 1, 0), iR = std::min(i + 1, width - 1);
+        int jD = std::max(j - 1, 0), jU = std::min(j + 1, height - 1);
+
+        glm::vec3 pL = vertices[j * width + iL].pos;
+        glm::vec3 pR = vertices[j * width + iR].pos;
+        glm::vec3 pD = vertices[jD * width + i].pos;
+        glm::vec3 pU = vertices[jU * width + i].pos;
+
+        glm::vec3 dx = pR - pL;
+        glm::vec3 dz = pU - pD;
+        glm::vec3 n = glm::normalize(glm::cross(dz, dx));
+
+        vertices[j * width + i].normal = n;
+      }
+    }
+
+    // 3. Индексы
+    for (int j = 0; j < height - 1; ++j) {
+      for (int i = 0; i < width - 1; ++i) {
+        uint32_t cur = j * width + i;
+        uint32_t next = (j + 1) * width + i;
+
+        indices.push_back(cur);
+        indices.push_back(next);
+        indices.push_back(next + 1);
+
+        indices.push_back(cur);
+        indices.push_back(next + 1);
+        indices.push_back(cur + 1);
+      }
+    }
+  }
 };
 
 struct LIBSKYENGINE_EXPORT GLTF_Model : public Object {

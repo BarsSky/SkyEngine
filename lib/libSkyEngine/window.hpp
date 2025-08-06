@@ -2,17 +2,14 @@
 
 #include <SkyEngine/config/config.h>
 
+#ifdef VK_USE_PLATFORM_XCB_KHR
+#include <xcb/xcb.h>
+#endif
+
 #ifdef QT_LIB_ENABLE
 #include <QVulkanInstance>
 #include <QWindow>
 #include "qt_plugin/vkwidget.h"
-
-#ifdef VK_USE_PLATFORM_XCB_KHR
-
-#include <xcb/xcb.h>
-
-#endif
-
 #else
 #ifdef GLFW_LIB_ENABLE
 #define GLFW_INCLUDE_VULKAN
@@ -24,6 +21,7 @@
 #include <functional>
 #include <iostream>
 #include <utility>
+#include <cstring>
 
 #define MAGICK_WIDTH 800;
 #define MAGICK_HEIGHT 600;
@@ -332,9 +330,11 @@ private:
   std::string icon_path; //../icons/engine.png
   // fullscreen flag
   bool _fullscreen = false;
+
 #ifdef QT_LIB_ENABLE
     QWindow *window = nullptr;
     VkWidget *vulkan_widget{};
+#endif
 #if defined(VK_USE_PLATFORM_XCB_KHR)
 public:
     bool m_prepared = false;
@@ -342,14 +342,13 @@ public:
     xcb_screen_t *m_screen = nullptr;
     xcb_window_t m_window = NULL;
     xcb_intern_atom_reply_t *m_atom_wm_delete_window = nullptr;
-#else
+#endif
 #ifdef VK_USE_PLATFORM_WIN32_KHR
     public:
         HWND m_window = NULL;
         HINSTANCE windowInstance{};
 #endif
-#endif
-#else
+#ifdef GLFW_LIB_ENABLE
   GLFWwindow *window{};
   GLFWmonitor *_primary{};
 

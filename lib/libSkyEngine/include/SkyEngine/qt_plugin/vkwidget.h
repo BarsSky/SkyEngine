@@ -13,6 +13,8 @@
 #include <QKeyEvent>
 #endif
 
+#include <thread>
+#include <iostream>
 #include <SkyEngine/export_import_magick.h>
 #include <SkyEngine/qt_plugin/widget_event_poll.h>
 

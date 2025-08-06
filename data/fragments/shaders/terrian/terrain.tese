@@ -1,6 +1,6 @@
 #version 450
 
-layout (set = 0, binding = 0) uniform UBO 
+layout (set = 1, binding = 0) uniform UBO 
 {
 	uvec4 unique_id;
 	mat4 projection;
@@ -13,7 +13,7 @@ layout (set = 0, binding = 0) uniform UBO
 	float tessellatedEdgeSize;
 } ubo; 
 
-layout (set = 0, binding = 1) uniform sampler2D displacementMap; 
+layout (set = 1, binding = 1) uniform sampler2D displacementMap; 
 
 layout(quads, equal_spacing, cw) in;
 

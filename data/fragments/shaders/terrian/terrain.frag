@@ -1,7 +1,7 @@
 #version 450
 
-layout (set = 0, binding = 1) uniform sampler2D samplerHeight; 
-layout (set = 0, binding = 2) uniform sampler2DArray samplerLayers;
+layout (set = 1, binding = 1) uniform sampler2D samplerHeight; 
+layout (set = 1, binding = 2) uniform sampler2DArray samplerLayers;
 
 layout (location = 0) in vec3 inNormal;
 layout (location = 1) in vec2 inUV;

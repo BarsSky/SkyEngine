@@ -1,8 +1,9 @@
 #pragma once
 
-#include <SkyEngine/config/config.h>
 #include <array>
-#include <memory>
+#include <SkyEngine/config/config.h>
+#include <vulkan/vulkan_core.h>
+
 #ifndef QT_LIB_ENABLE
 #define GLFW_INCLUDE_VULKAN
 
@@ -20,9 +21,7 @@
 
 #include <glm/gtx/hash.hpp>
 
-#include <utility>
 #include <SkyEngine/vk_sky_texture.hpp>
-#include <SkyEngine/export_import_magick.h>
 
 #define DEPTH_ARRAY_SCALE 4096 // TODO: make variable for change check depth
 
@@ -52,9 +51,7 @@ struct LIBSKYENGINE_EXPORT viBuffer {
   VkBuffer ind;
 };
 
-enum class ObjectFlags {
-  GLTF_DESCRITOR = 0x00000001
-};
+enum class ObjectFlags { GLTF_DESCRITOR = 0x00000001 };
 
 enum class ObjectRenderFlags {
   STDOBJECT = 0,
@@ -69,49 +66,63 @@ enum class ObjectRenderFlags {
  */
 struct LIBSKYENGINE_EXPORT Object {
   explicit Object();
-
+  Object(const Object &) = delete;
+  Object(Object &&) = delete;
+  auto operator=(const Object &) -> Object & = delete;
+  auto operator=(Object &&) -> Object & = delete;
   /**
-   * @brief Sets the engine dependencies for the object.
-   * @param device Pointer to VulkanDevice.
-   * @param swapChain Pointer to VulkanSwapChain.
+    При необходимости переопределяем генерацию командного буфера для объекта
+   */
+  void generateCommandBuffer();
+  // /**
+  //   Освобождаем выделенные под потоки ресурсы
+  //  */
+  // void freeThreadCommandBuffer();
+  /**
+   *
    */
   void setEngineDepends(VulkanDevice *device, VulkanSwapChain *swapChain);
 
   /**
-   * @brief Sets the shaders for the object.
+   * @brief Set the Object Sheaders object
    */
-  void setObjectShaders();;
+  void setObjectShaders();
+  ;
 
   /**
-   * @brief Loads shader paths for the object.
-   * @param paths Vector of shader file paths.
+   * @brief load shaders paths of object
    */
   void load_object_shaders(std::vector<std::string> paths);
 
   /**
-   * @brief Draws the object using the provided command buffer.
-   * @param _buffer Vulkan command buffer.
+   * @brief public function for draw object
+   * @param _buffer
    */
   void object_draw(VkCommandBuffer _buffer) {
-    if (!is_object_visible)
+    if (!is_object_visible) {
       return;
+    }
+    /// Проверяем участвует ли объект в отрисовке
+    if (!prepareViewPort()) {
+      return;
+    }
     /// TODO: Add draw description set for base manage functions
     drawObjectBase(_buffer);
     draw(_buffer);
   }
 
   /**
-   * @brief Creates the descriptor pool for the object.
+   * @brief public function for call create descriptor pool
    */
   void objectCreateDescriptorPool() {
-    ///TODO: Add universal function for create base pool descriptor
+    /// TODO: Add universal function for create base pool descriptor
     createObjectBasePool();
     createDescriptorPool();
     allocateDescriptorPool();
   };
 
   /**
-   * @brief Creates the descriptor sets for the object.
+   * @brief
    */
   void objectCreateDescriptorSets() {
     ////TODO: Add universal function for create base descriptor set
@@ -119,8 +130,8 @@ struct LIBSKYENGINE_EXPORT Object {
     createDescriptorSets();
   };
   /**
- * @brief Sets the descriptor layout for the object.
- */
+   * @brief
+   */
   void objectSetDescriptorLayout() {
     ////TODO: Add universal function for create base descriptor layout
     setObjectBaseLayout();
@@ -137,7 +148,7 @@ struct LIBSKYENGINE_EXPORT Object {
    *
    * @return std::vector<VkPipelineShaderStageCreateInfo>
    */
-  auto getShaderStages() const -> std::vector<VkPipelineShaderStageCreateInfo>;
+  std::vector<VkPipelineShaderStageCreateInfo> getShaderStages() const;
 
   /**
    * @brief
@@ -150,14 +161,14 @@ struct LIBSKYENGINE_EXPORT Object {
    *
    * @return std::vector<VkShaderModule>
    */
-  auto getShaderModules() const -> std::vector<VkShaderModule>;
+  std::vector<VkShaderModule> getShaderModules() const;
 
   /**
    * @brief Get the pipeline object
    *
    * @return VkPipelineLayout
    */
-  auto get_pipeline_layout() -> VkPipelineLayout;
+  VkPipelineLayout get_pipeline_layout();
 
   /**
    * @brief Get the descriptor set layout object
@@ -183,9 +194,9 @@ struct LIBSKYENGINE_EXPORT Object {
   auto get_descriptor_set() -> VkDescriptorSet;
 
   /**
-    *@brief set visible property
-    *
-    */
+   *@brief set visible property
+   *
+   */
   void setVisibleProperty(bool flag);
 
   /**
@@ -193,6 +204,7 @@ struct LIBSKYENGINE_EXPORT Object {
    *
    */
   virtual ~Object();
+  ;
 
   void cleanObjectSwapChain();
 
@@ -201,14 +213,14 @@ struct LIBSKYENGINE_EXPORT Object {
    *
    * @return VkDeviceSize
    */
-  virtual auto getBufferSize() -> VkDeviceSize = 0;
+  virtual VkDeviceSize getBufferSize() = 0;
 
   /**
    * @brief Get the Textures object
    *
    * @return std::vector<Texture*>
    */
-  virtual auto getTexturesSize() -> uint32_t = 0;
+  virtual uint32_t getTexturesSize() = 0;
 
   /**
    * @brief Get the descriptor object
@@ -216,21 +228,21 @@ struct LIBSKYENGINE_EXPORT Object {
    * @param tex_idx
    * @return VkDescriptorImageInfo*
    */
-  virtual auto get_descriptor_image(size_t tex_idx) -> VkDescriptorImageInfo * = 0;
+  virtual VkDescriptorImageInfo *get_descriptor_image(size_t tex_idx) = 0;
 
   /**
    * @brief Get the Buffer object
    *
    * @return viBuffer
    */
-  virtual auto getBuffer() -> viBuffer * = 0;
+  virtual viBuffer *getBuffer() = 0;
 
   /**
    * @brief Get the Indices object
    *
    * @return std::vector<uint32_t>
    */
-  virtual auto getIndices() -> std::vector<uint32_t> * = 0;
+  virtual std::vector<uint32_t> *getIndices() = 0;
 
   /**
    * @brief
@@ -239,17 +251,18 @@ struct LIBSKYENGINE_EXPORT Object {
    * @param vkSwapChain
    * @param type
    */
-  virtual void loadTexture(VkImageViewType type = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D) = 0;
+  virtual void loadTexture(
+      VkImageViewType type = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D) = 0;
 
   /**
-   * @brief Loads texture paths for the model.
-   * @param paths Vector of texture file paths.
+   * @brief load textures for model
+   *
+   * @param path
+   * @param ...
    */
-  void load_textures_paths(std::vector<std::string> paths);;
+  void load_textures_paths(std::vector<std::string> paths);
+  ;
 
-  /**
-   * @brief Destroys the object and releases resources.
-   */
   void object_destroy();
   /**
    * @brief
@@ -265,7 +278,8 @@ struct LIBSKYENGINE_EXPORT Object {
    * @param colorBlendAttachment
    * @param inputAssembly
    */
-  virtual void setObjectInfo(pipeline_parameters *_parameters, VkGraphicsPipelineCreateInfo *pipelineInfo) = 0;
+  virtual void setObjectInfo(pipeline_parameters *_parameters,
+                             VkGraphicsPipelineCreateInfo *pipelineInfo) = 0;
 
   /**
    * @brief
@@ -339,10 +353,10 @@ struct LIBSKYENGINE_EXPORT Object {
   virtual void createPipelineCache();
 
   /**
- * @brief create additinal compute command buffer if needed for object
- */
+   * @brief create additinal compute command buffer if needed for object
+   */
   void createAllBuffers() {
-    //TODO: Don't forgot Clear buffer
+    // TODO: Don't forgot Clear buffer
     createUniqueBuffers();
     createUniformBuffer();
   }
@@ -354,20 +368,17 @@ struct LIBSKYENGINE_EXPORT Object {
   /**
    *  @brief make barrier
    */
-  virtual void acquireBarrier(VkCommandBuffer _buffer) {
-  };
+  virtual void acquireBarrier(VkCommandBuffer _buffer) {};
 
   /**
    * @brief release barier
    */
-  virtual void releaseBarrier(VkCommandBuffer _buffer) {
-  };
+  virtual void releaseBarrier(VkCommandBuffer _buffer) {};
 
   /**
    * @brief additional destroy for compute
    */
-  virtual void additionalDestroy() {
-  };
+  virtual void additionalDestroy() {};
 
   /**
    * @brief if create compute shader for model
@@ -379,31 +390,30 @@ struct LIBSKYENGINE_EXPORT Object {
    * @brief get compute buffer
    * @return
    */
-  auto getComputeBuffer() const -> VkCommandBuffer *;
+  VkCommandBuffer *getComputeBuffer() const;
 
   /**
    * @brief get compute queue
    * @return
    */
-  auto getComputeQueue() const -> VkQueue;
+  VkQueue getComputeQueue() const;
 
   /**
    * @brief get compute semaphore
    * @return
    */
-  auto getComputeSemaphore() -> VkSemaphore *;
+  VkSemaphore *getComputeSemaphore();
 
   /**
    * @brief get graphic semaphore
    * @return VkSemaphore
    */
-  auto getGraphicSemaphore() const -> VkSemaphore *;
+  VkSemaphore *getGraphicSemaphore() const;
 
   /**
- *  @brief get data from shader
- */
+   *  @brief get data from shader
+   */
   virtual void readShaderData();
-
 
   // VK layouts
   VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
@@ -462,24 +472,21 @@ struct LIBSKYENGINE_EXPORT Object {
 
   // согласно количеству объектов на поток
   std::vector<VkCommandBuffer> cmdBuffer;
+
   ObjectRenderFlags render_flags = ObjectRenderFlags::STDOBJECT;
 
-  void set_mouse_ptr(glm::vec2 * ptr_point) {
-    mouse_position = ptr_point;
-  }
-  //FIXME: DEPRECATED FUNCTION
-  void set_screen_ptr(glm::vec2 * ptr_point) {
-    screen_size = *ptr_point;
-  }
+  void set_mouse_ptr(glm::vec2 *ptr_point) { mouse_position = ptr_point; }
+  // FIXME: DEPRECATED FUNCTION
+  void set_screen_ptr(glm::vec2 *ptr_point) { screen_size = *ptr_point; }
 
   /////////// Методы управления характеристиками объекта ////////////
   glm::vec3 obj_position = glm::vec3(0.0f, 0.0f, 0.0f);
 
-  auto position() -> glm::vec3;
+  glm::vec3 position();
 
-  auto rotation_axis() -> glm::vec3;
+  glm::vec3 rotation_axis();
 
-  auto rotation_speed() -> float;
+  float rotation_speed();
 
   void set_rotation_angle(float *angle);
 
@@ -497,7 +504,8 @@ private:
    * @param stage
    * @return VkPipelineShaderStageCreateInfo
    */
-  auto LoadShader(const std::string &filename, VkShaderStageFlagBits stage) -> VkPipelineShaderStageCreateInfo;
+  VkPipelineShaderStageCreateInfo LoadShader(const std::string &filename,
+                                             VkShaderStageFlagBits stage);
 
   std::vector<VkShaderModule> shaderModules;
   /**
@@ -532,6 +540,13 @@ private:
    */
   void setObjectBaseLayout();
   /**
+   *
+   */
+  bool prepareViewPort();
+  /**
+   */
+  void clearThreadChildObjects();
+  /**
    *  Характеристсики любого объекта
    */
   float *x{}, *y{}, *z{};
@@ -550,7 +565,7 @@ protected:
   std::vector<std::string> textures_paths;
   ObjectFlags object_flags;
   viBuffer trn_buff{};
-  //COMPUTE BLOCK
+  // COMPUTE BLOCK
   std::unique_ptr<ComputeInst> u_ptr_compute;
   // DRAW BLOCK
   bool is_object_visible = true;
@@ -563,39 +578,55 @@ protected:
    */
   std::vector<VkDescriptorPoolSize> vkPoolSizes{};
   uint32_t poolDrawSize = 0;
-  // TODO: make as function for increase layout counter then add new layout in vector automaticaly
-  std::vector<VkDescriptorSetLayout> vkDescriptorLayouts{};// compare all layouts in one vector for pipline layout
+  // TODO: make as function for increase layout counter then add new layout in
+  // vector automaticaly
+  std::vector<VkDescriptorSetLayout> vkDescriptorLayouts{}; // compare all
+  // layouts in one vector for pipline
+  //  layout
+  ///
+  uint32_t sub_objects = 0; /// count of child objects
+  //
+  VkCommandPool threadCommandPool = VK_NULL_HANDLE;
 };
 
 struct Object::ComputeInst {
   VulkanDevice *vDevice{};
   uint32_t queueFamilyIndex{};
-  // Used to check if compute and graphics queue families differ and require additional barriers
-  enma::Buffer storageBuffer; // (Shader) storage buffer object containing the particles
-  enma::Buffer uniformBuffer; // Uniform buffer object containing particle system parameters
+  // Used to check if compute and graphics queue families differ and require
+  // additional barriers
+  enma::Buffer
+      storageBuffer; // (Shader) storage buffer object containing the particles
+  enma::Buffer uniformBuffer; // Uniform buffer object containing particle
+                              // system parameters
   enma::Buffer hitBuffer; // hit buffer object for take data from compute shader
-  VkQueue queue{}; // Separate queue for compute commands (queue family may differ from the one used for graphics)
-  VkCommandPool commandPool{}; // Use a separate command pool (queue family may differ from the one used for graphics)
-  VkCommandBuffer commandBuffer = VK_NULL_HANDLE; // Command buffer storing the dispatch commands and barriers
-  VkSemaphore compute{}; // Execution dependency between compute & graphic submission
-  VkSemaphore graphic{}; // Execution dependency between compute & graphic submission
+  VkQueue queue{}; // Separate queue for compute commands (queue family may
+                   // differ from the one used for graphics)
+  VkCommandPool commandPool{}; // Use a separate command pool (queue family may
+                               // differ from the one used for graphics)
+  VkCommandBuffer commandBuffer =
+      VK_NULL_HANDLE; // Command buffer storing the dispatch commands and
+                      // barriers
+  VkSemaphore
+      compute{}; // Execution dependency between compute & graphic submission
+  VkSemaphore
+      graphic{}; // Execution dependency between compute & graphic submission
   VkDescriptorSetLayout descriptorSetLayout{}; // Compute shader binding layout
-  VkDescriptorSet descriptorSet{}; // Compute shader bindings
-  VkPipelineLayout pipelineLayout{}; // Layout of the compute pipeline
+  VkDescriptorSet descriptorSet{};             // Compute shader bindings
+  VkPipelineLayout pipelineLayout{};           // Layout of the compute pipeline
   VkPipeline pipeline{}; // Compute pipeline for updating particle positions
 
-  void set_device(VulkanDevice *vDev) {
-    vDevice = vDev;
-  }
+  void set_device(VulkanDevice *vDev) { vDevice = vDev; }
 
   void destroy() {
     storageBuffer.destroy();
     hitBuffer.destroy();
     uniformBuffer.destroy();
     vkDestroyPipelineLayout(vDevice->logicalDevice, pipelineLayout, nullptr);
-    vkDestroyDescriptorSetLayout(vDevice->logicalDevice, descriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(vDevice->logicalDevice, descriptorSetLayout,
+                                 nullptr);
     vkDestroyPipeline(vDevice->logicalDevice, pipeline, nullptr);
-    vkFreeCommandBuffers(vDevice->logicalDevice, commandPool, 1, &commandBuffer);
+    vkFreeCommandBuffers(vDevice->logicalDevice, commandPool, 1,
+                         &commandBuffer);
     vkDestroyCommandPool(vDevice->logicalDevice, commandPool, nullptr);
   }
 };
