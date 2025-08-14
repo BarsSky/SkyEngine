@@ -86,7 +86,7 @@ void Interface::PrepareAssets() {
   // modelStatic->set_screen_ptr(&screen);//FIXME: DEPRECATED FUNCTION
   SpaceShip->manage_constant.selected_unique_ID = 1;
 
-  for (int i = 1; i < 20; i++) {
+  for (int i = 1; i < 1; i++) {
     GLTF_Model *space = reinterpret_cast<GLTF_Model *>(createObject(
         pipelineObject(ePipelineObjectType::GLTF,
                        std::string(MODELS_DIRECTORY) + "/ColonShip1.glb")));
