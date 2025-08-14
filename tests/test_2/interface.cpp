@@ -7,6 +7,7 @@
 #include <SkyEngine/config/config.h>
 #include <iomanip>
 #include <sstream>
+#include <string>
 
 static glm::mat4 rotateAroundPoint(float rad, const glm::vec3 &point,
                                    const glm::vec3 &axis) {

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <SkyEngine/config/config.h>
-#include <memory>
 #ifndef QT_LIB_ENABLE
 #define GLFW_INCLUDE_VULKAN
 
@@ -28,7 +27,7 @@
 /**
  * @brief Vertex struct enum class
  */
-enum class VertexComponent : std::uint8_t {
+enum class VertexComponent : uint8_t {
   Position,
   Normal,
   UV,

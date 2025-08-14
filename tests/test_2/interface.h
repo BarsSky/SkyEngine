@@ -5,7 +5,7 @@
 #ifndef ZUR_Interface_H
 #define ZUR_Interface_H
 
-#include "vk_sky_model.hpp"
+#include <SkyEngine/vk_sky_model.hpp>
 #include <cstddef>
 #include <thread>
 #include <chrono>
