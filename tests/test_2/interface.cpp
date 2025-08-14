@@ -60,17 +60,17 @@ void Interface::PrepareAssets() {
   // +"/shader.frag.spv" ,
   //   std::string(SHADER_DIRECTORY) +"/shader.vert.spv"});
 
-  tarrain = static_cast<Terrain_Model *>(createObject(pipelineObject(
-      ePipelineObjectType::TERRIAN_OBJECT,
-      std::string(MODELS_DIRECTORY) + "/terrain_heightmap_r16.ktx")));
-  tarrain->load_textures_paths(
-      {std::string(MODELS_DIRECTORY) + "/terrain_heightmap_r16.png",
-       std::string(MODELS_DIRECTORY) + "/terrain_texturearray_rgba.ktx"});
-  tarrain->load_object_shaders(
-      {std::string(SHADER_DIRECTORY) + "/terrain.vert.spv",
-       std::string(SHADER_DIRECTORY) + "/terrain.frag.spv",
-       std::string(SHADER_DIRECTORY) + "/terrain.tesc.spv",
-       std::string(SHADER_DIRECTORY) + "/terrain.tese.spv"});
+//   tarrain = static_cast<Terrain_Model *>(createObject(pipelineObject(
+//       ePipelineObjectType::TERRIAN_OBJECT,
+//       std::string(MODELS_DIRECTORY) + "/terrain_heightmap_r16.ktx")));
+//   tarrain->load_textures_paths(
+//       {std::string(MODELS_DIRECTORY) + "/terrain_heightmap_r16.png",
+//        std::string(MODELS_DIRECTORY) + "/terrain_texturearray_rgba.ktx"});
+//   tarrain->load_object_shaders(
+//       {std::string(SHADER_DIRECTORY) + "/terrain.vert.spv",
+//        std::string(SHADER_DIRECTORY) + "/terrain.frag.spv",
+//        std::string(SHADER_DIRECTORY) + "/terrain.tesc.spv",
+//        std::string(SHADER_DIRECTORY) + "/terrain.tese.spv"});
 
   SpaceShip = reinterpret_cast<GLTF_Model *>(createObject(
       pipelineObject(ePipelineObjectType::GLTF,
@@ -317,12 +317,12 @@ void Interface::updateUniformBuffer() {
   sun_position =
       glm::vec4(0.0f, 0.0f, 149597.f, 0.0f); // 149'597'870'700f);//set km
 
-  tarrain->tesselation_ubo.projection = camera.matrices.perspective;
-  tarrain->tesselation_ubo.modelview = camera.matrices.view * glm::mat4(1.0f);
-  tarrain->tesselation_ubo.lightPos.y =
-      -0.5f - tarrain->tesselation_ubo.displacementFactor;
-  tarrain->tesselation_ubo.viewportDim =
-      glm::vec2((float)(*getScreen().uWidth), (float)(*getScreen().uHeight));
+//   tarrain->tesselation_ubo.projection = camera.matrices.perspective;
+//   tarrain->tesselation_ubo.modelview = camera.matrices.view * glm::mat4(1.0f);
+//   tarrain->tesselation_ubo.lightPos.y =
+//       -0.5f - tarrain->tesselation_ubo.displacementFactor;
+//   tarrain->tesselation_ubo.viewportDim =
+//       glm::vec2((float)(*getScreen().uWidth), (float)(*getScreen().uHeight));
 
   Earth->object_ubo.model = glm::mat4(1.f);
   //        Earth->object_ubo.model =

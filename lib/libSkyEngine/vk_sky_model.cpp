@@ -2352,7 +2352,8 @@ void Terrain_Model::updateMapped() {
   vks::Frustum frustum;
   frustum.update(tesselation_ubo.projection * tesselation_ubo.modelview);
 
-  memcpy(tesselation_ubo.frustumPlanes, frustum.planes.data(), sizeof(glm::vec4) * 6);
+  memcpy(tesselation_ubo.frustumPlanes.data(), frustum.planes.data(),
+         sizeof(glm::vec4) * 6);
 
   float savedFactor = tesselation_ubo.tessellationFactor;
   if (!tesselation)
@@ -2361,7 +2362,7 @@ void Terrain_Model::updateMapped() {
   memcpy(uniformObjectBuffer.mapped, &tesselation_ubo, sizeof(tesselation_ubo));
 
   if (!tesselation)
-    draw_objects.at(0)->ubo.tesselation_object.tessellationFactor = savedFactor;
+    tesselation_ubo.tessellationFactor = savedFactor;
 }
 
 void Terrain_Model::createAdditinalBuffer() { Model::createAdditinalBuffer(); }
@@ -4782,7 +4783,7 @@ void Model3D::initialization() { generateQuad(buff_vertices, buff_indices); }
 void Model3D::generateQuad(std::vector<Vertex> _vertices,
                            std::vector<uint32_t> _indices) {
   vertices = _vertices;
-  if (vertices.size() == 0)
+  if (vertices.size() == 0) {
     // Setup vertices for a single uv-mapped quad made from two triangles
     vertices = {{{-1.000000, 1.000000, 1.000000},
                  {0.0f, 0.0f, 1.0f},
@@ -4938,12 +4939,15 @@ void Model3D::generateQuad(std::vector<Vertex> _vertices,
                  {0.4, 0.8, 0.6, 1}}
 
     };
+  }
 
+  indices = _indices;
   // Setup indices
-  if (indices.size() == 0)
+  if (indices.size() == 0) {
     indices = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
                12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
                24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35};
+  }
   indexCount = static_cast<uint32_t>(indices.size());
 
   // Create buffers

@@ -5,8 +5,9 @@
 #ifndef VKSky_PIPLINEOBJECT_H
 #define VKSky_PIPLINEOBJECT_H
 
-#include <SkyEngine/vk_sky_object.hpp>
 #include <SkyEngine/vk_sky_model.hpp>
+#include <SkyEngine/vk_sky_object.hpp>
+
 /*
  * We can add new pipelineObject to draw_objects
  * TODO: add functional:
@@ -14,81 +15,86 @@
  * or configure scenes
  */
 
-enum class LIBSKYENGINE_EXPORT ePipelineObjectType : unsigned int
-{
-    OBJECT_3D,
-    OBJECT_2D,
-    LINE,
-    GLTF,
-    GLTF_ANIMATE,
-    GLTF_SkyBox,
-    TRANSPARENT_OBJECT_3D,
-    TRANSPARENT_OBJECT_2D,
-    FROM_BUFFER,
-    TERRIAN_OBJECT,
-    PARTICLE_CPU_OBJECT,
-    PARTICLE_GPU_OBJECT,
-    TEXT_OVERLAY,
-    TEXT_FORM,
-    SHAPE_FORM,
-    UI_FORM
+enum class LIBSKYENGINE_EXPORT ePipelineObjectType : unsigned int {
+  OBJECT_3D,
+  OBJECT_2D,
+  HEIGHTMAP_3D,
+  LINE,
+  GLTF,
+  GLTF_ANIMATE,
+  GLTF_SkyBox,
+  TRANSPARENT_OBJECT_3D,
+  TRANSPARENT_OBJECT_2D,
+  FROM_BUFFER,
+  TERRIAN_OBJECT,
+  PARTICLE_CPU_OBJECT,
+  PARTICLE_GPU_OBJECT,
+  TEXT_OVERLAY,
+  TEXT_FORM,
+  SHAPE_FORM,
+  UI_FORM
 };
 
 /**
  *  Класс помощник для более быстрого формирования объектов
  */
-// TODO: Закрыть данный класс от пользователя, реализовывать формирование через штатный открытый API класса Magick
-struct LIBSKYENGINE_EXPORT pipelineObject
-{
-    explicit pipelineObject(ePipelineObjectType type, std::vector<Vertex> vertices = std::vector<Vertex>(),
-                            std::vector<uint32_t> indices = std::vector<uint32_t>());
+// TODO: Закрыть данный класс от пользователя, реализовывать формирование через
+// штатный открытый API класса Magick
+struct LIBSKYENGINE_EXPORT pipelineObject {
+  explicit pipelineObject(
+      ePipelineObjectType type,
+      std::vector<Vertex> vertices = std::vector<Vertex>(),
+      std::vector<uint32_t> indices = std::vector<uint32_t>());
 
-    pipelineObject(ePipelineObjectType type, std::string object_path);
+  pipelineObject(ePipelineObjectType type, std::string object_path);
 
-    explicit pipelineObject(void *obj);
+  explicit pipelineObject(void *obj);
 
-    virtual ~pipelineObject() = default;
+  virtual ~pipelineObject() = default;
 
-    void *create_Model_3d();
+  auto create_Model_3d() -> void *;
 
-    void *create_Model_3d(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
+  auto create_Model_3d(std::vector<Vertex> vertices,
+                        std::vector<uint32_t> indices) -> void *;
 
-    static void *create_Model_3d(std::string object_path);
+  static auto create_Model_3d(std::string object_path,
+                               model_type = model_type::from_obj_file) -> void *;
 
-    // For particals
-    void *create_Particle_cpu();
+  // For particals
+  auto create_Particle_cpu() -> void *;
 
-    void *create_Particle_gpu();
+  auto create_Particle_gpu() -> void *;
 
-    void *create_Terrian(std::string object_path);
+  auto create_Terrian(std::string object_path) -> void *;
 
-    void *create_Transparent_3d(std::string object_path);
+  auto create_Transparent_3d(std::string object_path) -> void *;
 
-    void *create_GLTF_Model(std::string object_path);
+  auto create_GLTF_Model(std::string object_path) -> void *;
 
-    void *create_GLTF_Model_Animate(std::string object_path);
+  auto create_GLTF_Model_Animate(std::string object_path) -> void *;
 
-    void *create_GLTF_SkyBox(std::string object_path);
+  auto create_GLTF_SkyBox(std::string object_path) -> void *;
 
-    void *create_Model_2D();
+  auto create_Model_2D() -> void *;
 
-    void *create_Model_2D(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
+  auto create_Model_2D(std::vector<Vertex> vertices,
+                        std::vector<uint32_t> indices) -> void *;
 
-    void *create_Line();
+  auto create_Line() -> void *;
 
-    void *create_TextOverlay();
+  auto create_TextOverlay() -> void *;
 
-    void *create_Line(std::vector<Vertex> vertices);
+  auto create_Line(std::vector<Vertex> vertices) -> void *;
 
-    void *create_UI_Form();
+  auto create_UI_Form() -> void *;
 
-    void *create_Text_Form();
+  auto create_Text_Form() -> void *;
 
-    void *create_Shape_Form();
+  auto create_Shape_Form() -> void *;
 
-    //
-    //    uniformsBuffers ubo;
-    void *object;
+  //
+  //    uniformsBuffers ubo;
+  void *object;
 };
 
 #endif // VKSky_PIPLINEOBJECT_H
