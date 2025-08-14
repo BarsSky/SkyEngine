@@ -43,7 +43,7 @@ else()
     endif()
 endif()
 
-find_package(GLM CONFIG REQUIRED)
+find_package(GLM CONFIG)
 if(NOT GLM_FOUND)
     message(WARNING "Not found glm library make shure you add GLM_ROOT path")
 else()

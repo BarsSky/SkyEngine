@@ -850,15 +850,15 @@ private:
     // 1. Вершины с UV
     for (int j = 0; j < height; ++j) {
       float v = float(j) / (height - 1);
-      float θ = v * M_PI;
+      float theta = v * M_PI;
 
       for (int i = 0; i < width; ++i) {
         float u = float(i) / (width - 1);
-        float φ = u * 2.0f * M_PI;
+        float phi = u * 2.0f * M_PI;
 
-        float x = sin(θ) * cos(φ);
-        float y = cos(θ);
-        float z = sin(θ) * sin(φ);
+        float x = sin(theta) * cos(phi);
+        float y = cos(theta);
+        float z = sin(theta) * sin(phi);
 
         float h = heightmap[j * width + i] * hScale;
         glm::vec3 pos = glm::vec3(x, y, z) * (R + h);
