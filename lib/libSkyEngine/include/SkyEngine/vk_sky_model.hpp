@@ -13,6 +13,10 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 
+#ifdef _MSVC_LANG
+#define NOMINMAX
+#endif
+
 #include <glm/gtx/hash.hpp>
 
 #include <algorithm>
@@ -868,8 +872,10 @@ private:
     // 2. Нормали
     for (int j = 0; j < height; ++j) {
       for (int i = 0; i < width; ++i) {
-        int iL = std::max(i - 1, 0), iR = std::min(i + 1, width - 1);
-        int jD = std::max(j - 1, 0), jU = std::min(j + 1, height - 1);
+        int iL = std::max(i - 1, 0);
+        int iR = std::min(i + 1, width - 1);
+        int jD = std::max(j - 1, 0);
+        int jU = std::min(j + 1, height - 1);
 
         glm::vec3 pL = vertices[j * width + iL].pos;
         glm::vec3 pR = vertices[j * width + iR].pos;
