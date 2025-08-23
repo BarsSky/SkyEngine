@@ -2,39 +2,40 @@
 // Created by ubuntu on 13.05.24.
 //
 
+#include <SkyEngine/config/config.h>
 #include <SkyEngine/qt_plugin/vkwidget.h>
 #include <SkyEngine/vk_sky.hpp>
 #ifdef QT_LIB_ENABLE
 #include <qwidget.h>
 
 void VkWidget::updateVulkanKeyboard(VkQtEvent event) {
-  vk_display::VKDisplay::getApp()->send_key_event(event.event, event.code,
+  vk_sky::VKSky::getApp()->send_key_event(event.event, event.code,
                                                   event.action);
 }
 
 void VkWidget::updateVulkanMouse(VkQtEvent event) {
-  vk_display::VKDisplay::getApp()->send_mouse_event(event.event);
+  vk_sky::VKSky::getApp()->send_mouse_event(event.event);
 }
 
 void VkWidget::updateVulkanMWheel(VkQtEvent event) {
-  vk_display::VKDisplay::getApp()->send_scroll_event(event.event, event.code);
+  vk_sky::VKSky::getApp()->send_scroll_event(event.event, event.code);
 }
 
 void VkWidget::updateVulkanCursor(VkQtEvent event) {
-  vk_display::VKDisplay::getApp()->send_cursor_event(event.event);
+  vk_sky::VKSky::getApp()->send_cursor_event(event.event);
 }
 
 void VkWidget::close_window() {
-  vk_display::VKDisplay::getApp()->done = true;
-  vk_display::VKDisplay::getApp()->stop_engine();
-  delete vk_display::VKDisplay::getApp();
+  vk_sky::VKSky::getApp()->done = true;
+  vk_sky::VKSky::getApp()->stop_engine();
+  delete vk_sky::VKSky::getApp();
 }
 
 void VkWidget::show_window() {
   static bool isRunning = false;
   if (!isRunning) {
     try {
-      vk_display::VKDisplay::getApp()->run();
+      vk_sky::VKSky::getApp()->run();
       isRunning = true;
     } catch (const std::exception &e) {
       std::cerr << e.what() << std::endl;
@@ -52,7 +53,7 @@ void VkWidget::resizeEvent(QResizeEvent *event) {
 }
 
 void VkWidget::resizeVulkanWindow() {
-  vk_display::VKDisplay::getApp()->recreateWindow();
+  vk_sky::VKSky::getApp()->recreateWindow();
 }
 
 void VkWidget::mouseMoveEvent(QMouseEvent *event) {
@@ -136,7 +137,7 @@ bool VkWidget::check_event() { return pool.event_come(); }
 
 VkWidget::~VkWidget() { std::cout << "remove" << std::endl; }
 
-VkWidget::VkWidget(QWidget *parent):QWidget(parent) {
+VkWidget::VkWidget(QWidget *parent) : QWidget(parent) {
   if (!hasMouseTracking()) {
     setMouseTracking(true);
   }
