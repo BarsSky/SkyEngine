@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstddef>
-#ifndef QT_LIB_ENABLE
+#ifdef GLFW_LIB_ENABLE
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>

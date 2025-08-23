@@ -32,8 +32,6 @@ public:
 
     ~VkWidget() override;
 
-    void set_size_ptr(int *_width, int *_height);
-
     bool check_event();
 
     void eventHandler();
