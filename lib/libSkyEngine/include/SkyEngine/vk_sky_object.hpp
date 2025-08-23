@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vk_sky_object.hpp"
 #include <array>
 #include <SkyEngine/config/config.h>
 #include <vulkan/vulkan_core.h>
@@ -22,6 +23,8 @@
 #include <glm/gtx/hash.hpp>
 
 #include <SkyEngine/vk_sky_texture.hpp>
+
+#include <entt/entt.hpp>
 
 #define DEPTH_ARRAY_SCALE 4096 // TODO: make variable for change check depth
 
@@ -70,6 +73,12 @@ struct LIBSKYENGINE_EXPORT Object {
   Object(Object &&) = delete;
   auto operator=(const Object &) -> Object & = delete;
   auto operator=(Object &&) -> Object & = delete;
+  /**
+    Инициализируем объект для менеджера объектов
+    Далее расписать для каждого объекта виртуальную абстрактную функцию updateBuffer
+    с учетом entity
+  */
+  entt::entity ecsEntity;
   /**
     При необходимости переопределяем генерацию командного буфера для объекта
    */
