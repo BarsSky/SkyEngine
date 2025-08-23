@@ -20,6 +20,7 @@ endif()
 file(GLOB _HEADER_FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/*.h
         ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include/SkyEngine/*.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/Camera/*.h
         ${CMAKE_CURRENT_SOURCE_DIR}/include/SkyEngine/qt_plugin/*.h
@@ -39,7 +40,7 @@ if(GLFW_LIB_ENABLE)
                 ${IMGUI_ROOT}/backends/*.h
                 ${KHR_ROOT}/KHR/*.h)
         list(APPEND _HEADER_FILES ${_HEADER_FILES_A})
-               
+
 endif()
 
 set(_PUBLIC_INCLUDE_DIR # директории указанные в этой переменной видны в этой библиотеке,
@@ -68,7 +69,7 @@ set(_PRIVATE_DEFINITIONS
 )
 
 if(MSVC)
-        list(APPEND _PRIVATE_DEFINITIONS _MSVC_LANG=201103L)
+        list(APPEND _PRIVATE_DEFINITIONS _MSVC_LANG=201710L NOMINMAX)
 endif()
 
 helper_add_library(

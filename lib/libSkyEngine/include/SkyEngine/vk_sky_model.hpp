@@ -13,10 +13,6 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 
-#ifdef _MSVC_LANG
-#define NOMINMAX
-#endif
-
 #include <glm/gtx/hash.hpp>
 
 #include <algorithm>

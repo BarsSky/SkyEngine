@@ -14,3 +14,5 @@ CTestTestfile.cmake
 /data/shaders
 /data/glslc
 checks.json
+
+build/

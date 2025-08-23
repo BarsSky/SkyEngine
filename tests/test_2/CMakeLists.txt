@@ -19,9 +19,9 @@ set(_PRIVATE_INCLUDE_DIR # директории указанные в этой �
     ${CMAKE_BINARY_DIR}/include
 )
 
-#if ((MSVC) AND (MSVC_VERSION GREATER_EQUAL 1914))
+# if ((MSVC) AND (MSVC_VERSION GREATER_EQUAL 1914))
 #    target_compile_options(stxxl INTERFACE "/Zc:__cplusplus")
-#endif()
+# endif()
 
 #Препроцессоры устанавливаемые по умолчанию
 set(_PRIVATE_DEFINITIONS
@@ -33,7 +33,7 @@ set(_PRIVATE_DEFINITIONS
 )
 
 if(MSVC)
-    list(APPEND _PRIVATE_DEFINITIONS _MSVC_LANG=201103L)
+    list(APPEND _PRIVATE_DEFINITIONS _MSVC_LANG=201710L NOMINMAX)
 endif()
 
 # создаёт проект для исполняемого файла
