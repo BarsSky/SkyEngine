@@ -1,33 +1,33 @@
 /*
-* Basic camera class
-*
-* Copyright (C) 2016 by Sascha Willems - www.saschawillems.de
-*
-* This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
-*/
+ * Basic camera class
+ *
+ * Copyright (C) 2016 by Sascha Willems - www.saschawillems.de
+ *
+ * This code is licensed under the MIT license (MIT)
+ * (http://opensource.org/licenses/MIT)
+ */
 #pragma once
 
 #ifdef _MSC_VER
-#define M_PI 3.141592265358979323864
+#define glm ::pi<float>() 3.141592265358979323864
 #endif
-
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <algorithm>
-#include <utility>
 #include <memory>
+#include <utility>
+
 #define GLM_ENABLE_EXPERIMENTAL
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/euler_angles.hpp>
 #include <SkyEngine/export_import_magick.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 class LIBSKYENGINE_EXPORT ObjCamera {
 private:
-
   glm::vec3 up_vector = {0, -1, 0};
   glm::vec3 cam_direction{};
   glm::vec3 cam_pos_delta = glm::vec3(0, 0, 0);
@@ -39,18 +39,17 @@ private:
 
   void updateViewMatrix();
 
-  static glm::mat4 get_matrices(const float* matr);
+  static glm::mat4 get_matrices(const float *matr);
 
-  static glm::quat safeQuatLookAt(
-      glm::vec3 const &position,
-      glm::vec3 const &target,
-      glm::vec3 const &up,
-      glm::vec3 const &altUp);
+  static glm::quat safeQuatLookAt(glm::vec3 const &position,
+                                  glm::vec3 const &target, glm::vec3 const &up,
+                                  glm::vec3 const &altUp);
 
-  void changePitch(float degree);;
+  void changePitch(float degree);
+  ;
 
-  void changeHeading(float degree);;
-
+  void changeHeading(float degree);
+  ;
 
   glm::vec3 getRightVec() const;
 
@@ -60,18 +59,17 @@ private:
 
   void updateViewMatrixQuat();
 
-  static glm::mat4 getMatrixEulerRotate(glm::vec3 euler) {
-    return glm::mat4();
-  }
+  static glm::mat4 getMatrixEulerRotate(glm::vec3 euler) { return glm::mat4(); }
 
   glm::vec3 getRotationVector(glm::vec3 point_to, glm::vec3 point_from);
 
   glm::mat4 getRotationMatrix(glm::vec3 point_to, glm::vec3 point_from);
 
 public:
-
   ObjCamera();
   ~ObjCamera();
+
+  static ObjCamera *getApp(ObjCamera *ptr = nullptr);
 
   enum CameraType {
     FREE,
@@ -87,7 +85,7 @@ public:
   glm::vec3 position = glm::vec3();
   glm::vec3 delta_position = glm::vec3();
   glm::vec4 viewPos = glm::vec4();
-  //glm::vec3 base_zoomVec = glm::vec3(0,0,1);
+  // glm::vec3 base_zoomVec = glm::vec3(0,0,1);
 
   float rotationSpeed = 1.0f;
   float movementSpeed = 1.0f;
@@ -116,7 +114,6 @@ public:
     bool down = false;
   } scroll;
 
-
   void updateAxDelta();
 
   void updateMovingTarget(glm::vec4 newPos, glm::vec3 *vel);
@@ -139,7 +136,7 @@ public:
 
   bool moving() const;
 
-  void moveCam(int x, int y);;
+  void moveCam(int x, int y);
 
   float getNearClip();
 
@@ -161,7 +158,7 @@ public:
 
   void rotate(glm::vec3 delta);
 
-  void setTranslation(glm::vec3 translation);;
+  void setTranslation(glm::vec3 translation);
 
   void translate(glm::vec3 delta);
 
@@ -169,7 +166,7 @@ public:
 
   void setMovementSpeed(float movementSpeed);
 
-  void update(float deltaTime);;
+  void update(float deltaTime);
 
   // Update camera passing separate axis data (gamepad)
   // Returns true if view or position has been changed

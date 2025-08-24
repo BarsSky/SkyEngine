@@ -453,21 +453,16 @@ public:
    *
    */
   VkDeviceSize getBufferSize() override;
-  ;
 
   uint32_t getTexturesSize() override;
-  ;
 
   viBuffer *getBuffer() override;
 
   std::vector<uint32_t> *getIndices() override;
-  ;
 
   void update(float frame_time) override;
-  ;
 
   void prepare() override;
-  ;
 
   void setDescriptorLayout() override;
 
@@ -478,6 +473,8 @@ public:
   void createUniformBuffer() override;
 
   void createAdditinalBuffer() override;
+
+  void updateUniformBuffer() override;
 
   void LoadModelFromFile(std::string path);
 
@@ -510,7 +507,7 @@ private:
 #define PARTICLE_TYPE_FLAME 0
 #define PARTICLE_TYPE_SMOKE 1
 #ifdef _MSC_VER
-#define M_PI 3.141592265358979323864
+#define glm ::pi<float>() 3.141592265358979323864
 #endif
 
 struct LIBSKYENGINE_EXPORT Partical_Model_CPU : public Object {
@@ -610,7 +607,6 @@ struct LIBSKYENGINE_EXPORT Partical_Model_CPU : public Object {
   void update(float frame_time) override;
 
   void prepare() override;
-  ;
 
   void setDescriptorLayout() override;
 
@@ -619,6 +615,8 @@ struct LIBSKYENGINE_EXPORT Partical_Model_CPU : public Object {
   void createRenderPass(VkFormat format) override;
 
   void createUniformBuffer() override;
+
+  void updateUniformBuffer() override;
 
   struct {
     VkBuffer buffer;
@@ -773,6 +771,8 @@ struct LIBSKYENGINE_EXPORT Partical_Model_GPU final : public Object {
   void additionalDestroy() override;
 
   void clearComputeBlock() override;
+
+  void updateUniformBuffer() override;
 };
 
 #define PARTICLE_COUNT 1024 * 4
@@ -795,6 +795,8 @@ struct LIBSKYENGINE_EXPORT Transparent_Model final : public Model {
   VkDeviceSize getBufferSize() override;
 
   void createAdditinalBuffer() override;
+
+  void updateUniformBuffer() override;
 };
 
 struct LIBSKYENGINE_EXPORT Terrain_Model final : public Model {
@@ -826,6 +828,8 @@ struct LIBSKYENGINE_EXPORT Terrain_Model final : public Model {
 
   void createAdditinalBuffer() override;
 
+  void updateUniformBuffer() override;
+
 private:
   bool tesselation = false;
 
@@ -849,11 +853,11 @@ private:
     // 1. Вершины с UV
     for (int j = 0; j < height; ++j) {
       float v = float(j) / (height - 1);
-      float theta = v * M_PI;
+      float theta = v * glm::pi<float>();
 
       for (int i = 0; i < width; ++i) {
         float u = float(i) / (width - 1);
-        float phi = u * 2.0f * M_PI;
+        float phi = u * 2.0f * glm::pi<float>();
 
         float x = sin(theta) * cos(phi);
         float y = cos(theta);
@@ -979,6 +983,7 @@ struct LIBSKYENGINE_EXPORT GLTF_Model : public Object {
 
   void readShaderData() override;
 
+  void updateUniformBuffer() override;
   /**
    * @brief function return id number of selected object in gltf model
    * if 0 not selected any object
@@ -1063,6 +1068,8 @@ struct LIBSKYENGINE_EXPORT GLTF_Model_Animate final : public Object {
 
   void createAdditinalBuffer() override;
 
+  void updateUniformBuffer() override;
+
   class AnimGLTF_Model_Impl;
 
 private:
@@ -1114,6 +1121,8 @@ struct LIBSKYENGINE_EXPORT GLTF_SkyBox final : public GLTF_Model {
                                    VkFormat depthFormat);
 
   void createAdditinalBuffer() override;
+
+  void updateUniformBuffer() override;
 };
 
 // Max. number of chars the text overlay buffer can hold
@@ -1228,6 +1237,8 @@ public:
   void updateMapped() override;
 
   void createAdditinalBuffer() override;
+
+  void updateUniformBuffer() override;
 };
 
 struct LIBSKYENGINE_EXPORT Model3D final : public Object {
@@ -1309,6 +1320,8 @@ struct LIBSKYENGINE_EXPORT Model3D final : public Object {
   VkDeviceSize getBufferSize() override;
 
   void createAdditinalBuffer() override;
+
+  void updateUniformBuffer() override;
 };
 
 struct LIBSKYENGINE_EXPORT Model2D final : public Object {
@@ -1433,6 +1446,8 @@ struct LIBSKYENGINE_EXPORT Model2D final : public Object {
   VkDeviceSize getBufferSize() override;
 
   void createAdditinalBuffer() override;
+
+  void updateUniformBuffer() override;
 };
 
 struct LIBSKYENGINE_EXPORT Line : public Object {
@@ -1508,6 +1523,8 @@ struct LIBSKYENGINE_EXPORT Line : public Object {
   VkDeviceSize getBufferSize() override;
 
   void createAdditinalBuffer() override;
+
+  void updateUniformBuffer() override;
 };
 
 /**
@@ -1812,6 +1829,8 @@ struct LIBSKYENGINE_EXPORT TextForm : public UIForm, Object {
 
   void readShaderData() override;
 
+  void updateUniformBuffer() override;
+
   /// @brief
   uint32_t *frameBufferWidth;
   uint32_t *frameBufferHeight;
@@ -1886,6 +1905,8 @@ struct LIBSKYENGINE_EXPORT ShapeForm : public UIForm, Object {
   void updateMapped() override;
 
   void createAdditinalBuffer() override;
+
+  void updateUniformBuffer() override;
 
   void updateTexture(uint8_t *data);
 

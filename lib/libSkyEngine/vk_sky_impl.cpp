@@ -249,7 +249,7 @@ void VKSky::CImpl::setupDebugMessenger() {
   populateDebugMessengerCreateInfo(createInfo);
 
   if (CreateDebugUtilsMessengerEXT(vDevice.instance, &createInfo, nullptr,
-                                    &debugMessenger) != VK_SUCCESS) {
+                                   &debugMessenger) != VK_SUCCESS) {
     throw std::runtime_error("failed to set up debug messenger!");
   }
 
@@ -1255,6 +1255,11 @@ void VKSky::CImpl::updateOverlay() {
 }
 
 bool VKSky::CImpl::is_ui_enable() const { return enableUI; }
+
+void VKSky::CImpl::updateUniformBuffer() {
+  for (auto &obj : all_objects)
+    obj->updateUniformBuffer();
+}
 
 void VKSky::CImpl::prepareUI() {
 #ifdef GLFW_LIB_ENABLE

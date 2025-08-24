@@ -25,6 +25,8 @@
 - [QT 5.14](https://www.qt.io/) — опциональная интеграция
 - [Vulkan Examples](https://github.com/SaschaWillems/Vulkan) — материалы для изучения
 
+ - [entt](https://github.com/skypjack/entt) — Entity Component System (ECS) для управления объектами
+
 ---
 
 ## Возможности
@@ -34,6 +36,8 @@
 - Система частиц (CPU/GPU)
 - Отрисовка текста
 - Объёмные линии с использованием геометрического шейдера
+
+ - Интеграция ECS (Entity Component System) для управления состоянием и логикой объектов
 
 ---
 

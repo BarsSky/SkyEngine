@@ -3,6 +3,6 @@
 
 class ECSManager {
 public:
-    entt::registry registry;
-    // Методы для создания/удаления сущностей, компонентов, систем
+  entt::registry registry;
+  // Методы для создания/удаления сущностей, компонентов, систем
 };

@@ -38,7 +38,8 @@ if(GLFW_LIB_ENABLE)
                 ${IMGUI_ROOT}/*.h
                 ${IMGUI_ROOT}/misc/cpp/*.h
                 ${IMGUI_ROOT}/backends/*.h
-                ${KHR_ROOT}/KHR/*.h)
+                ${KHR_ROOT}/KHR/*.h
+                ${ENTT_REPO_ROOT}/single_include/entt/*.hpp)
         list(APPEND _HEADER_FILES ${_HEADER_FILES_A})
 
 endif()
@@ -53,6 +54,7 @@ set(_PUBLIC_INCLUDE_DIR # директории указанные в этой п
         ${IMGUI_ROOT}/misc/cpp/
         ${IMGUI_ROOT}/backends/
         ${KHR_ROOT}/KHR/
+        ${ENTT_REPO_ROOT}/
 )
 
 set(_PRIVATE_INCLUDE_DIR #
@@ -147,6 +149,11 @@ install(
         FILES ${INSTALL_HEADER_FILES}
         DESTINATION
         "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/Camera/"
+        COMPONENT headers)
+install(
+        FILES ${ENTT_REPO_ROOT}/single_include/entt/entt.hpp
+        DESTINATION
+        "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/entt/"
         COMPONENT headers)
 
 if(QT_LIB_ENABLE)

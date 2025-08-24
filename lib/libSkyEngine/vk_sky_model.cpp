@@ -2,6 +2,7 @@
 #include "animodel_impl.h"
 #include "extension/stb/stb_font_consolas_24_latin1.inl"
 #include "gltf_model_impl.h"
+#include "vk_sky_objcamera.hpp"
 #include <unordered_map>
 #include <utility>
 
@@ -788,15 +789,16 @@ void Model::preparePipeline() {
   VkPipelineColorBlendAttachmentState colorBlendAttachment =
       initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE);
   VkPipelineDepthStencilStateCreateInfo depthStencil =
-      initializers::pipelineDepthStencilStateCreateInfo(
-          VK_TRUE, VK_FALSE, VK_COMPARE_OP_LESS_OR_EQUAL);
+      initializers::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE,
+                                                        VK_COMPARE_OP_LESS);
   VkPipelineInputAssemblyStateCreateInfo inputAssembly =
       initializers::pipelineInputAssemblyStateCreateInfo(
           VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
   VkPipelineRasterizationStateCreateInfo rasterizer =
       initializers::pipelineRasterizationStateCreateInfo(
-          VK_POLYGON_MODE_FILL, VK_CULL_MODE_FRONT_BIT,
-          VK_FRONT_FACE_COUNTER_CLOCKWISE, 0); ///*_COUNTER*/
+          VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT,
+          VK_FRONT_FACE_COUNTER_CLOCKWISE,
+          0); ///*_COUNTER*/
   VkPipelineColorBlendStateCreateInfo colorBlending =
       initializers::pipelineColorBlendStateCreateInfo(1, &colorBlendAttachment);
   VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -877,6 +879,17 @@ void Model::updateMapped() {
 }
 
 void Model::createAdditinalBuffer() {}
+
+void Model::updateUniformBuffer() {
+  ObjCamera *cam = ObjCamera::getApp();
+  object_ubo.view = cam->matrices.view;
+  object_ubo.proj = cam->matrices.perspective;
+  object_ubo.model = glm::mat4(1.0f);
+  // Get entity for light position
+  object_ubo.lightPositon = glm::vec4(0.0f, 10.0f, 0.0f, 1.0f);
+  object_ubo.viewPos = cam->viewPos;
+  object_ubo.unique_id = glm::vec4(10, 1, 0, 0);
+}
 
 Model::~Model() = default;
 
@@ -1103,6 +1116,8 @@ void Partical_Model_CPU::createUniformBuffer() {
                         &uniformObjectBuffer);
   uniformObjectBuffer.map();
 }
+
+void Partical_Model_CPU::updateUniformBuffer() {}
 
 void Partical_Model_CPU::createFramebuffers(VulkanSwapChain *vkSwapChain) {
   std::vector<VkImageView> view_vector;
@@ -1443,12 +1458,12 @@ void Partical_Model_CPU::initParticle(Particle *part, glm::vec3 emit_pos) {
   part->size = 1.0f + rnd(1.f);
   part->color = glm::vec4(1.0f);
   part->type = PARTICLE_TYPE_FLAME;
-  part->rotation = rnd(2.0f * float(M_PI));
+  part->rotation = rnd(2.0f * float(glm::pi<float>()));
   part->rotationSpeed = rnd(2.0f) - rnd(2.0f);
 
   // Get random sphere point
-  float theta = rnd(2.0f * float(M_PI));
-  float phi = rnd(float(M_PI)) - float(M_PI) / 2.0f;
+  float theta = rnd(2.0f * float(glm::pi<float>()));
+  float phi = rnd(float(glm::pi<float>())) - float(glm::pi<float>()) / 2.0f;
   float r = rnd(radius);
 
   part->pos.x = r * cos(theta) * cos(phi);
@@ -2064,6 +2079,8 @@ void Partical_Model_GPU::clearComputeBlock() {
   vkDestroySemaphore(vDevice->logicalDevice, u_ptr_compute->graphic, nullptr);
 }
 
+void Partical_Model_GPU::updateUniformBuffer() {}
+
 Partical_Model_GPU::Partical_Model_GPU() : Object() {
   render_flags = ObjectRenderFlags::CMPTOBJECT;
 }
@@ -2366,6 +2383,8 @@ void Terrain_Model::updateMapped() {
 }
 
 void Terrain_Model::createAdditinalBuffer() { Model::createAdditinalBuffer(); }
+
+void Terrain_Model::updateUniformBuffer() {}
 
 void GLTF_SkyBox::loadTexture(VkImageViewType type) {
   for (const auto &path : textures_paths) {
@@ -2982,6 +3001,8 @@ void GLTF_SkyBox::createAdditinalBuffer() {
   GLTF_Model::createAdditinalBuffer();
 }
 
+void GLTF_SkyBox::updateUniformBuffer() {}
+
 ///////////////////////////////////////// GLTF MODEl ANIMATE
 /////////////////////////////////////////////////////////////
 void GLTF_Model_Animate::createDescriptorSets() {
@@ -3293,6 +3314,8 @@ std::vector<uint32_t> *GLTF_Model_Animate::getIndices() { return nullptr; }
 GLTF_Model_Animate::~GLTF_Model_Animate() {}
 
 void GLTF_Model_Animate::createAdditinalBuffer() {}
+
+void GLTF_Model_Animate::updateUniformBuffer() {}
 
 void GLTF_Model::createUniformBuffer() {}
 
@@ -3645,6 +3668,8 @@ void GLTF_Model::readShaderData() {
   memset(data, 0, sizeof(uint32_t) * DEPTH_ARRAY_SCALE);
   vkUnmapMemory(vDevice->logicalDevice, pickObjectBuffer.memory);
 }
+
+void GLTF_Model::updateUniformBuffer() {}
 
 uint32_t GLTF_Model::idSelected() const { return selectedId; }
 
@@ -4067,6 +4092,8 @@ void Transparent_Model::updateMapped() {
 void Transparent_Model::createAdditinalBuffer() {
   Model::createAdditinalBuffer();
 }
+
+void Transparent_Model::updateUniformBuffer() {}
 
 TextOverlay::TextOverlay()
     : Object(), frameBufferWidth(nullptr), frameBufferHeight(nullptr),
@@ -4770,6 +4797,8 @@ void TextOverlay::updateMapped() {
 
 void TextOverlay::createAdditinalBuffer() {}
 
+void TextOverlay::updateUniformBuffer() {}
+
 Model3D::Model3D(const std::vector<Vertex> &_vertices,
                  const std::vector<uint32_t> &_indices, uint8_t *_texture_data)
     : Object() {
@@ -5451,6 +5480,8 @@ void Model3D::updateMapped() {
 
 void Model3D::createAdditinalBuffer() {}
 
+void Model3D::updateUniformBuffer() {}
+
 Model2D::Model2D(const std::vector<Vertex> &_vertices,
                  const std::vector<uint32_t> &_indices, uint8_t *_texture_data)
     : Object() {
@@ -6104,6 +6135,8 @@ void Model2D::updateMapped() {
 
 void Model2D::createAdditinalBuffer() {}
 
+void Model2D::updateUniformBuffer() {}
+
 Line::Line(std::vector<Vertex> _vertices) : Object() {
   buff_vertices = std::move(_vertices);
 }
@@ -6575,6 +6608,8 @@ void Line::updateMapped() {
 
 void Line::createAdditinalBuffer() {}
 
+void Line::updateUniformBuffer() {}
+
 TextForm::TextForm()
     : UIForm(), Object(), shift_position(), frameBufferWidth(nullptr),
       frameBufferHeight(nullptr) {
@@ -6809,6 +6844,8 @@ void TextForm::readShaderData() {
   memset(data, 0, sizeof(uint32_t) * DEPTH_ARRAY_SCALE);
   vkUnmapMemory(vDevice->logicalDevice, pickObjectBuffer.memory);
 }
+
+void TextForm::updateUniformBuffer() {}
 
 void TextForm::initialization() {
   updateFrameSize(vDevice->uWidth(), vDevice->uHeight());
@@ -7619,6 +7656,8 @@ void ShapeForm::updateMapped() {
 }
 
 void ShapeForm::createAdditinalBuffer() {}
+
+void ShapeForm::updateUniformBuffer() {}
 
 void ShapeForm::updateTexture(uint8_t *data) {
   VkBuffer stagingBuffer;

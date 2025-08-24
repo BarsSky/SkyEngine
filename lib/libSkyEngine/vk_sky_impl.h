@@ -5,29 +5,27 @@
 #ifndef PK_DISPLAY_vk_sky_IMPL_H
 #define PK_DISPLAY_vk_sky_IMPL_H
 
+#include "initializer.hpp"
+#include "threadpool.hpp"
+#include "tools.hpp"
+#include "vk_sky_keyboard.hpp"
+#include <SkyEngine/export_import_magick.h>
 #include <SkyEngine/vk_sky.hpp>
 #include <SkyEngine/vk_sky_texture.hpp>
-#include "initializer.hpp"
-#include "tools.hpp"
-#include "threadpool.hpp"
-#include "vk_sky_keyboard.hpp"
-#include <thread>
 #include <chrono>
-#include <SkyEngine/export_import_magick.h>
+#include <thread>
 #ifdef QT_LIB_ENABLE
 #include <QObject>
 #endif
 
 using namespace vk_sky;
 
-struct cmdBufferRecThrdPrm
-{
+struct cmdBufferRecThrdPrm {
   VkCommandBuffer commandBuffer;
   std::function<bool(VkCommandBuffer)> recordFunction;
 };
 
-class ThreadObject
-{
+class ThreadObject {
 public:
   std::vector<Object *> objectsInThread;
   size_t numOfObjectsInThread = 0;
@@ -38,7 +36,8 @@ public:
 
   void destroy();
 
-  void configure_buffer(VkDevice _device, uint32_t queueNodeIndex, uint32_t imageIndex);
+  void configure_buffer(VkDevice _device, uint32_t queueNodeIndex,
+                        uint32_t imageIndex);
 
   void remove();
 
@@ -54,8 +53,7 @@ private:
 
 class LIBSKYENGINE_EXPORT VKSky::CImpl
 #ifdef QT_LIB_ENABLE
-    : public QObject
-{
+    : public QObject {
   Q_OBJECT
 #else
 {
@@ -111,9 +109,11 @@ public:
 
   void loadAssets(Object *obj);
 
-  //        void addObject(Object *object, ObjectFlags flag = ObjectFlags::BASE_LOAD);
+  //        void addObject(Object *object, ObjectFlags flag =
+  //        ObjectFlags::BASE_LOAD);
 
-  Object *createObject(const pipelineObject &pipeline, ObjectFlags flag = ObjectFlags::BASE_LOAD);
+  Object *createObject(const pipelineObject &pipeline,
+                       ObjectFlags flag = ObjectFlags::BASE_LOAD);
 
   Screen getScreen();
 
@@ -127,7 +127,8 @@ public:
   float timerSpeed = 0.25f;
   bool prepared = false;
   bool resized = false;
-  /** @brief Last frame time measured using a high performance timer (if available) */
+  /** @brief Last frame time measured using a high performance timer (if
+   * available) */
   float frameTimer = 1.0f;
   bool done = false;
 #ifdef GLFW_LIB_ENABLE
@@ -184,6 +185,8 @@ public:
   void updateOverlay();
 
   bool is_ui_enable() const;
+
+  void updateUniformBuffer();
 
 private:
   /**
@@ -250,7 +253,8 @@ private:
   void viewChanged();
 
   /**
-   *   @brief make update mapped uniform buffer of objects to view in on place (no need memcpy after change buffer)
+   *   @brief make update mapped uniform buffer of objects to view in on place
+   * (no need memcpy after change buffer)
    */
   void updateBufferMapped();
 
@@ -341,16 +345,20 @@ protected:
 
   void setupDebugMessenger();
 
-  static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
-                                            const VkAllocationCallbacks *pAllocator);
+  static void
+  DestroyDebugUtilsMessengerEXT(VkInstance instance,
+                                VkDebugUtilsMessengerEXT debugMessenger,
+                                const VkAllocationCallbacks *pAllocator);
 
-  static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
+  static void populateDebugMessengerCreateInfo(
+      VkDebugUtilsMessengerCreateInfoEXT &createInfo);
 
   void createSynchronizationPrimitives();
 
   static std::vector<const char *> getRequiredExtensions();
 
-  // VkPipelineShaderStageCreateInfo LoadShader(const std::string &filename, VkShaderStageFlagBits stage);
+  // VkPipelineShaderStageCreateInfo LoadShader(const std::string &filename,
+  // VkShaderStageFlagBits stage);
   void configureAssetsBuffer();
 
   // Render
@@ -371,7 +379,8 @@ protected:
   uint32_t lastFPS = 0;
 
 #ifdef __linux__
-  std::chrono::time_point<std::chrono::high_resolution_clock> lastTimestamp, tPrevEnd;
+  std::chrono::time_point<std::chrono::high_resolution_clock> lastTimestamp,
+      tPrevEnd;
 #elif defined(_MSC_VER) || defined(_WIN32)
   std::chrono::time_point<std::chrono::steady_clock> lastTimestamp, tPrevEnd;
 #endif
@@ -398,7 +407,8 @@ protected:
 
   std::vector<const char *> enabledDeviceExtensions;
   std::vector<const char *> enabledInstanceExtensions;
-  /** @brief Optional pNext structure for passing extension structures to device creation */
+  /** @brief Optional pNext structure for passing extension structures to device
+   * creation */
   void *deviceCreatepNextChain = nullptr;
 
   // for vulkan
@@ -415,7 +425,8 @@ protected:
   VkFence renderFence = {};
   VkSubmitInfo submitInfo{};
 
-  VkPipelineStageFlags submitPipelineStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  VkPipelineStageFlags submitPipelineStages =
+      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
   size_t currentFrame = 0;
 
@@ -428,29 +439,18 @@ protected:
   bool m_signalFrame = false;
   bool thread_prepare_on = true;
 #ifdef GLFW_LIB_ENABLE
-  struct UI_param
-  {
+  struct UI_param {
     std::string ui_name = "UI";
     std::vector<std::string> preview_text = {u8"Some string for preview"};
     ImGuiWindowFlags ui_flags = ImGuiWindowFlags_AlwaysAutoResize;
     bool enable_fps_rate = true;
 
-    struct
-    {
-      bool operator()() const
-      {
-        return fix;
-      }
+    struct {
+      bool operator()() const { return fix; }
 
-      ImVec2 pos() const
-      {
-        return vec;
-      }
+      ImVec2 pos() const { return vec; }
 
-      ImGuiCond cond() const
-      {
-        return condition;
-      }
+      ImGuiCond cond() const { return condition; }
 
       ImGuiCond condition = ImGuiCond_FirstUseEver;
       bool fix = true;

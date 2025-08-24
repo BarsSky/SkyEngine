@@ -1,8 +1,8 @@
 #pragma once
 
 #include "vk_sky_object.hpp"
-#include <array>
 #include <SkyEngine/config/config.h>
+#include <array>
 #include <vulkan/vulkan_core.h>
 
 #ifndef QT_LIB_ENABLE
@@ -75,8 +75,8 @@ struct LIBSKYENGINE_EXPORT Object {
   auto operator=(Object &&) -> Object & = delete;
   /**
     Инициализируем объект для менеджера объектов
-    Далее расписать для каждого объекта виртуальную абстрактную функцию updateBuffer
-    с учетом entity
+    Далее расписать для каждого объекта виртуальную абстрактную функцию
+    updateBuffer с учетом entity
   */
   entt::entity ecsEntity;
   /**
@@ -424,6 +424,11 @@ struct LIBSKYENGINE_EXPORT Object {
    */
   virtual void readShaderData();
 
+  /**
+    @brief Update uniform buffer object
+  */
+  void updateAllBuffers() { updateUniformBuffer(); }
+  virtual void updateUniformBuffer() = 0;
   // VK layouts
   VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout pickDescriptorSetLayout = VK_NULL_HANDLE;
@@ -555,6 +560,10 @@ private:
   /**
    */
   void clearThreadChildObjects();
+  /**
+      @brief Update base buffers for object
+  */
+  void updateBaseBuffers();
   /**
    *  Характеристсики любого объекта
    */

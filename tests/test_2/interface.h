@@ -5,45 +5,36 @@
 #ifndef ZUR_Interface_H
 #define ZUR_Interface_H
 
+#include "ECSManager.hpp"     
+#include <SkyEngine/vk_sky.hpp>
 #include <SkyEngine/vk_sky_model.hpp>
+#include <SkyEngine/vk_sky_uioverlay.hpp>
+#include <chrono>
 #include <cstddef>
 #include <thread>
-#include <chrono>
 #include <vector>
-#include <SkyEngine/vk_sky.hpp>
-#include <SkyEngine/vk_sky_uioverlay.hpp>
 
 using namespace vk_sky;
-
 
 struct GenerationTextureBuffer {
   ~GenerationTextureBuffer() {
     if (buffer != nullptr)
-      delete [] buffer;
+      delete[] buffer;
     buffer = nullptr;
   }
 
-  uint8_t *getBuffer() const {
-    return buffer;
-  }
+  uint8_t *getBuffer() const { return buffer; }
 
   uint8_t *buffer = nullptr;
 };
 
-class Interface : public VKSky
-{
+class Interface : public VKSky {
 public:
   // структура типа объектов
-  enum
-  {
-    sun = 0,
-    earth = 1,
-    moon = 2
-  };
+  enum { sun = 0, earth = 1, moon = 2 };
 
   // структура параметров объектов
-  struct objParams
-  {
+  struct objParams {
     int type;
     glm::vec4 pos;     // позиция
     glm::vec3 vct_vel; // вектор движения
@@ -53,8 +44,7 @@ public:
   uint64_t TimeMark = 0;
 
   // Структура для отслеживания нажатий кнопок мыши
-  struct
-  {
+  struct {
     bool left = false;
     bool right = false;
     bool middle = false;
@@ -88,10 +78,8 @@ public:
 
   void createObjPool();
 
-  glm::vec3 getRotationVector(glm::vec3 point_to,
-                              glm::vec3 point_from,
-                              bool counterclockwise,
-                              glm::vec3 rotate_axis);
+  glm::vec3 getRotationVector(glm::vec3 point_to, glm::vec3 point_from,
+                              bool counterclockwise, glm::vec3 rotate_axis);
 
   //    void magickKeyboard(QKeyEvent *event, int key, int type) override;
   //
@@ -101,9 +89,12 @@ public:
   //
   //    void magickCursor(QMouseEvent *event) override;
 
-  ///@brief
-  /// Определяем публичные слоты для сигналов управления от виджетов QT
-  ///
+
+  /**
+    @brief Определяем менеджер сущностей
+  */
+  ECSManager ecs_manager;
+
 private:
   void magickCursor(double x_pos, double y_pos);
   // base directories
@@ -144,10 +135,7 @@ private:
   int trash_objects = 9;
   int active_search = -1;
 
-  static bool connect()
-  {
-    return false;
-  }
+  static bool connect() { return false; }
 
   /**
    *  Обзекты интерфейса
@@ -157,14 +145,15 @@ private:
   Model *Earth = nullptr;
   Model *Moon = nullptr;
   Model *Sun = nullptr;
-  Terrain_Model * tarrain = nullptr;
+  Terrain_Model *tarrain = nullptr;
   TextOverlay *text_info = nullptr;
   GLTF_Model *modelAnimate = nullptr;
   Partical_Model_GPU *gpu_particle = nullptr;
   Partical_Model_GPU *gpu_particle1 = nullptr;
   GLTF_Model *SpaceShip = nullptr;
   std::vector<GLTF_Model *> SpaceShips;
-  GLTF_Model *Axis_X = nullptr, *Axis_Y = nullptr, *Axis_Z = nullptr, *Axis_X2 = nullptr, *Axis_Y2 = nullptr, *Axis_Z2 = nullptr;
+  GLTF_Model *Axis_X = nullptr, *Axis_Y = nullptr, *Axis_Z = nullptr,
+             *Axis_X2 = nullptr, *Axis_Y2 = nullptr, *Axis_Z2 = nullptr;
   Transparent_Model *Atmosphere = nullptr;
   GLTF_SkyBox *SkyBox = nullptr;
   /// Текст и формы
@@ -186,7 +175,7 @@ private:
   ShapeForm *shapeForm4 = nullptr;
   ShapeForm *shapeForm5 = nullptr;
   /// Текстура для форм
-    uint32_t texture_size{};
+  uint32_t texture_size{};
   GenerationTextureBuffer *texture_buffer_current = nullptr;
   GenerationTextureBuffer *texture_buffer_next = nullptr;
   GenerationTextureBuffer texture_extent_buffer[2];

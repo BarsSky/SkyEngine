@@ -2,6 +2,7 @@
 // Created by ubuntu on 30.05.24.
 //
 #include "interface.h"
+#include "Components.hpp"
 #include "vk_sky_model.hpp"
 #include "vk_sky_pipelineobject.hpp"
 #include <SkyEngine/config/config.h>
@@ -61,21 +62,26 @@ void Interface::PrepareAssets() {
   // +"/shader.frag.spv" ,
   //   std::string(SHADER_DIRECTORY) +"/shader.vert.spv"});
 
-//   tarrain = static_cast<Terrain_Model *>(createObject(pipelineObject(
-//       ePipelineObjectType::TERRIAN_OBJECT,
-//       std::string(MODELS_DIRECTORY) + "/terrain_heightmap_r16.ktx")));
-//   tarrain->load_textures_paths(
-//       {std::string(MODELS_DIRECTORY) + "/terrain_heightmap_r16.png",
-//        std::string(MODELS_DIRECTORY) + "/terrain_texturearray_rgba.ktx"});
-//   tarrain->load_object_shaders(
-//       {std::string(SHADER_DIRECTORY) + "/terrain.vert.spv",
-//        std::string(SHADER_DIRECTORY) + "/terrain.frag.spv",
-//        std::string(SHADER_DIRECTORY) + "/terrain.tesc.spv",
-//        std::string(SHADER_DIRECTORY) + "/terrain.tese.spv"});
+  //   tarrain = static_cast<Terrain_Model *>(createObject(pipelineObject(
+  //       ePipelineObjectType::TERRIAN_OBJECT,
+  //       std::string(MODELS_DIRECTORY) + "/terrain_heightmap_r16.ktx")));
+  //   tarrain->load_textures_paths(
+  //       {std::string(MODELS_DIRECTORY) + "/terrain_heightmap_r16.png",
+  //        std::string(MODELS_DIRECTORY) + "/terrain_texturearray_rgba.ktx"});
+  //   tarrain->load_object_shaders(
+  //       {std::string(SHADER_DIRECTORY) + "/terrain.vert.spv",
+  //        std::string(SHADER_DIRECTORY) + "/terrain.frag.spv",
+  //        std::string(SHADER_DIRECTORY) + "/terrain.tesc.spv",
+  //        std::string(SHADER_DIRECTORY) + "/terrain.tese.spv"});
 
   SpaceShip = reinterpret_cast<GLTF_Model *>(createObject(
       pipelineObject(ePipelineObjectType::GLTF,
                      std::string(MODELS_DIRECTORY) + "/ColonShip1.glb")));
+  //// Create ECS entity for spaceship
+  SpaceShip->ecsEntity = ecs_manager.registry.create();
+  ecs_manager.registry.emplace<Position>(SpaceShip->ecsEntity, 0.F, 0.F, 0.F);
+  ecs_manager.registry.emplace<Velocity>(SpaceShip->ecsEntity, 0.F, 0.F, 0.F);
+
   SpaceShip->obj_position = glm::vec3(0.0f, 0.0f, 0.0f);
   SpaceShip->load_object_shaders(
       {std::string(SHADER_DIRECTORY) + "/shader.vert.spv",
@@ -224,6 +230,10 @@ void Interface::PrepareBaseObjects() {
   Earth = reinterpret_cast<Model *>(createObject(pipelineObject(
       ePipelineObjectType::OBJECT_3D, _model_dir + "/earth.obj")));
   Earth->obj_position = glm::vec3(0.0f, 0.0f, 0.0f);
+  Earth->ecsEntity = ecs_manager.registry.create();
+  ecs_manager.registry.emplace<Position>(Earth->ecsEntity, 0.F, 0.F, 0.F);
+  ecs_manager.registry.emplace<Velocity>(Earth->ecsEntity, 0.F, 0.F, 0.F);
+  ecs_manager.registry.emplace<HierarchyComponent>(Earth->ecsEntity);
   Earth->load_textures_paths(
       {_model_dir + "/earth_diff.ktx", _model_dir + "/earth_norm.ktx"});
   Earth->load_object_shaders(
@@ -318,14 +328,15 @@ void Interface::updateUniformBuffer() {
   sun_position =
       glm::vec4(0.0f, 0.0f, 149597.f, 0.0f); // 149'597'870'700f);//set km
 
-//   tarrain->tesselation_ubo.projection = camera.matrices.perspective;
-//   tarrain->tesselation_ubo.modelview = camera.matrices.view * glm::mat4(1.0f);
-//   tarrain->tesselation_ubo.lightPos.y =
-//       -0.5f - tarrain->tesselation_ubo.displacementFactor;
-//   tarrain->tesselation_ubo.viewportDim =
-//       glm::vec2((float)(*getScreen().uWidth), (float)(*getScreen().uHeight));
+  //   tarrain->tesselation_ubo.projection = camera.matrices.perspective;
+  //   tarrain->tesselation_ubo.modelview = camera.matrices.view *
+  //   glm::mat4(1.0f); tarrain->tesselation_ubo.lightPos.y =
+  //       -0.5f - tarrain->tesselation_ubo.displacementFactor;
+  //   tarrain->tesselation_ubo.viewportDim =
+  //       glm::vec2((float)(*getScreen().uWidth),
+  //       (float)(*getScreen().uHeight));
 
-  Earth->object_ubo.model = glm::mat4(1.f);
+//   Earth->object_ubo.model = glm::mat4(1.f);
   //        Earth->object_ubo.model =
   //        glm::scale(Earth->object_ubo.model,glm::vec3(1000,1000,1000));
   // Earth.ubo.model = rotateAroundPoint(time * glm::radians(0.2f),
@@ -338,12 +349,12 @@ void Interface::updateUniformBuffer() {
   //                                          time * glm::radians(0.004f),
   //                                          glm::vec3(1.0f, 1.0f, 0.0f));
 
-  Earth->object_ubo.lightPositon = sun_position;
-  Earth->object_ubo.view = camera.matrices.view;
-  Earth->object_ubo.proj = camera.matrices.perspective;
-  Earth->object_ubo.viewPos = camera.viewPos;
-  Earth->object_ubo.unique_id =
-      glm::vec4{10, 1, 0, 0}; ///< Set base value of unique id
+//   Earth->object_ubo.lightPositon = sun_position;
+//   Earth->object_ubo.view = camera.matrices.view;
+//   Earth->object_ubo.proj = camera.matrices.perspective;
+//   Earth->object_ubo.viewPos = camera.viewPos;
+//   Earth->object_ubo.unique_id =
+//       glm::vec4{10, 1, 0, 0}; ///< Set base value of unique id
 
   // auto size_nodes_an = modelAnimate->getLinearNodesSize();
   // for (int i = 0; i < size_nodes_an; ++i) {

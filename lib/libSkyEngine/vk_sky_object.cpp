@@ -277,6 +277,10 @@ void Object::clearThreadChildObjects() {
   vkDestroyCommandPool(vDevice->logicalDevice, threadCommandPool, nullptr);
 }
 
+void Object::updateBaseBuffers() {
+  //// Обновляем стандартные буфферы на основе камеры
+}
+
 void Object::createPipelineCache() {
   VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
   pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;

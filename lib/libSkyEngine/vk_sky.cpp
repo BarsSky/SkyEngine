@@ -58,6 +58,7 @@ void VKSky::set_first_camera() {
 
 void VKSky::updateBuffers() {
   updateUniformBuffer();
+  u_ptr_->updateUniformBuffer();
   u_ptr_->prepareUI();
 #ifdef GLFW_LIB_ENABLE
   OnUpdateUIOverlay(&u_ptr_->uiOverlay);
@@ -268,15 +269,17 @@ void VKSky::magickCursor(QMouseEvent *event) // x_pos, double y_pos);
   //     {
   //         // camera.rotate(glm::vec3(dy * camera.rotationSpeed,
   //         //                         -dx * camera.rotationSpeed, 0.0f));
-  //         camera.dxAxsAngle = dx * (2 * M_PI / (float)*current_window.width);
-  //         camera.dyAxsAngle = -dy * (M_PI / (float)*current_window.height);
+  //         camera.dxAxsAngle = dx * (2 * glm::pi<float>() /
+  //         (float)*current_window.width); camera.dyAxsAngle = -dy *
+  //         (glm::pi<float>() / (float)*current_window.height);
   //         camera.moving();
   //         camera.update(0);
   //     }
   //     if (mouseButtons.right)
   //     {
-  //         camera.dzAxsAngle = glm::sign(dx) * (dx * dx + dy * dy) * (2 * M_PI
-  //         / (float)*current_window.width); camera.moving(); camera.update(0);
+  //         camera.dzAxsAngle = glm::sign(dx) * (dx * dx + dy * dy) * (2 *
+  //         glm::pi<float>() / (float)*current_window.width); camera.moving();
+  //         camera.update(0);
   //     }
   //     if (mouseButtons.middle)
   //     {
