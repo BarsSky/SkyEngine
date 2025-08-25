@@ -16,6 +16,9 @@
 #endif
 #include <vulkan/vulkan.h>
 // #include <xcb/xcb.h>
+#ifdef _WIN32
+#include <vulkan/vulkan_win32.h>
+#endif
 
 #define VK_NO_PROTOTYPES
 
