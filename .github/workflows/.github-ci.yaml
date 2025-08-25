@@ -2,7 +2,7 @@
 name: sky engine build
 
 #run on push
-on: 
+on:
   push:
     branches:
       - develop
@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: checkout and build
         uses: actions/checkout@v2
+        with:
+          submodules: recursive
 
       - name: cmake build for MINGW
         run: |
@@ -62,7 +64,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: msvc-build
-          path: ./SkyEngine_msvc.zip  
+          path: ./SkyEngine_msvc.zip
 
       # - name: Run cppcheck (static analysis)
       #   run: |
@@ -88,7 +90,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Download MinGW build
         uses: actions/download-artifact@v4
         with:
@@ -117,14 +119,13 @@ jobs:
             - Release created by GitHub Actions
             - Version: ${{ github.ref_name }}
             - Commit: ${{ github.sha }}
-            
+
             ### External Assets
             Dependent object models for the engine can be downloaded here:
             https://skynas.ru/drive/d/s/13VBfaNNxGKfR9gaKl0iHTSflAjBChSC/gUiOJs3FiHwjfWGYhV-SflULByETWv7C-1bUgKIhDTgw
-            
+
             ---
           files: |
             mingw/**
             mingwQT/**
             msvc/**
-
