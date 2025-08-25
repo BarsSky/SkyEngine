@@ -1,1 +1,2 @@
 add_subdirectory(libSkyEngine)
+add_subdirectory(libECSManager)
