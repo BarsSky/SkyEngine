@@ -2,13 +2,14 @@
 // Created by ubuntu on 30.05.24.
 //
 #include "interface.h"
-#include "Components.hpp"
 #include "vk_sky_model.hpp"
 #include "vk_sky_pipelineobject.hpp"
+#include <SkyEngine/Components.hpp>
 #include <SkyEngine/config/config.h>
 #include <iomanip>
 #include <sstream>
 #include <string>
+
 
 static glm::mat4 rotateAroundPoint(float rad, const glm::vec3 &point,
                                    const glm::vec3 &axis) {
@@ -336,7 +337,7 @@ void Interface::updateUniformBuffer() {
   //       glm::vec2((float)(*getScreen().uWidth),
   //       (float)(*getScreen().uHeight));
 
-//   Earth->object_ubo.model = glm::mat4(1.f);
+  //   Earth->object_ubo.model = glm::mat4(1.f);
   //        Earth->object_ubo.model =
   //        glm::scale(Earth->object_ubo.model,glm::vec3(1000,1000,1000));
   // Earth.ubo.model = rotateAroundPoint(time * glm::radians(0.2f),
@@ -349,12 +350,12 @@ void Interface::updateUniformBuffer() {
   //                                          time * glm::radians(0.004f),
   //                                          glm::vec3(1.0f, 1.0f, 0.0f));
 
-//   Earth->object_ubo.lightPositon = sun_position;
-//   Earth->object_ubo.view = camera.matrices.view;
-//   Earth->object_ubo.proj = camera.matrices.perspective;
-//   Earth->object_ubo.viewPos = camera.viewPos;
-//   Earth->object_ubo.unique_id =
-//       glm::vec4{10, 1, 0, 0}; ///< Set base value of unique id
+  //   Earth->object_ubo.lightPositon = sun_position;
+  //   Earth->object_ubo.view = camera.matrices.view;
+  //   Earth->object_ubo.proj = camera.matrices.perspective;
+  //   Earth->object_ubo.viewPos = camera.viewPos;
+  //   Earth->object_ubo.unique_id =
+  //       glm::vec4{10, 1, 0, 0}; ///< Set base value of unique id
 
   // auto size_nodes_an = modelAnimate->getLinearNodesSize();
   // for (int i = 0; i < size_nodes_an; ++i) {

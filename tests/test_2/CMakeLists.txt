@@ -4,20 +4,20 @@ set(_TARGET_NAME test_2) # имя исполняемого файла
 file(GLOB_RECURSE
     _SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
-    ${SRC_ROOT}/ecs/*.cpp)
+    ${SRC_ROOT}/*.cpp)
 
 #добавление заголовочных файлов с учётом подкаталогов в проект
 file(GLOB_RECURSE
     _HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp
-    ${SRC_ROOT}/ecs/*.hpp)
+    ${SRC_ROOT}/*.hpp)
 
 
 set(_PRIVATE_INCLUDE_DIR # директории указанные в этой переменной видны в этой библиотеке,
     # а также в других библиотеках и исполняемых файлах, подключивших библиотеку
     #
-    ${SRC_ROOT}/ecs/
+    ${SRC_ROOT}/
     ${ENTT_REPO_ROOT}/single_include/
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_BINARY_DIR}/include

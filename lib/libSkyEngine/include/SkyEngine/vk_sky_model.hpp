@@ -506,9 +506,6 @@ private:
  */
 #define PARTICLE_TYPE_FLAME 0
 #define PARTICLE_TYPE_SMOKE 1
-#ifdef _MSC_VER
-#define glm ::pi<float>() 3.141592265358979323864
-#endif
 
 struct LIBSKYENGINE_EXPORT Partical_Model_CPU : public Object {
   UniformBufferParticle particl_ubo;

@@ -8,10 +8,6 @@
  */
 #pragma once
 
-#ifdef _MSC_VER
-#define glm ::pi<float>() 3.141592265358979323864
-#endif
-
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <algorithm>

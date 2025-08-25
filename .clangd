@@ -1,6 +1,7 @@
 CompileFlags:
 	Add:
 		- "-I${workspaceFolder}/lib/libSkyEngine/include"
+		- "-I${workspaceFolder}/lib/libECSManager/include"
 		- "-I${workspaceFolder}/src/ecs"
 		- "-I${workspaceFolder}/dependencies/entt/single_include"
 		- "-I${workspaceFolder}/tests/test_2"

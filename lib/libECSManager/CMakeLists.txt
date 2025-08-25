@@ -1,0 +1,12 @@
+message(STATUS "Get ECSManager Headers")
+
+file(GLOB _HEADER_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/SkyEngine/*.hpp
+)
+
+install(
+    FILES ${_HEADER_FILES}
+    DESTINATION
+    "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}"
+    COMPONENT headers)
+

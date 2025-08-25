@@ -5,7 +5,7 @@
 #ifndef ZUR_Interface_H
 #define ZUR_Interface_H
 
-#include "ECSManager.hpp"     
+#include <SkyEngine/ECSManager.hpp>
 #include <SkyEngine/vk_sky.hpp>
 #include <SkyEngine/vk_sky_model.hpp>
 #include <SkyEngine/vk_sky_uioverlay.hpp>
@@ -88,7 +88,6 @@ public:
   //    void magickMouse(QMouseEvent *event) override;
   //
   //    void magickCursor(QMouseEvent *event) override;
-
 
   /**
     @brief Определяем менеджер сущностей

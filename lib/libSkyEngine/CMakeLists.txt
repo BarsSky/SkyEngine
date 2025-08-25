@@ -55,6 +55,7 @@ set(_PUBLIC_INCLUDE_DIR # директории указанные в этой п
         ${IMGUI_ROOT}/backends/
         ${KHR_ROOT}/KHR/
         ${ENTT_REPO_ROOT}/
+        ${SRC_ROOT}/
 )
 
 set(_PRIVATE_INCLUDE_DIR #
@@ -66,7 +67,6 @@ set(_PUBLIC_DEFINITIONS #
 )
 
 set(_PRIVATE_DEFINITIONS
-        BOOST_ERROR_CODE_HEADER_ONLY
         #
 )
 

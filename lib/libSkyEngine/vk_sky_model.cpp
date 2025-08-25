@@ -1,10 +1,13 @@
 #include "vk_sky_model.hpp"
+#include <SkyEngine/ECSManager.hpp>
 #include "animodel_impl.h"
 #include "extension/stb/stb_font_consolas_24_latin1.inl"
 #include "gltf_model_impl.h"
 #include "vk_sky_objcamera.hpp"
+#include "vk_sky_object.hpp"
 #include <unordered_map>
 #include <utility>
+
 
 #define TINYOBJLOADER_IMPLEMENTATION
 
@@ -889,6 +892,7 @@ void Model::updateUniformBuffer() {
   object_ubo.lightPositon = glm::vec4(0.0f, 10.0f, 0.0f, 1.0f);
   object_ubo.viewPos = cam->viewPos;
   object_ubo.unique_id = glm::vec4(10, 1, 0, 0);
+  ECSManager::getPtr()->registry.get<Position>(ecsEntity);
 }
 
 Model::~Model() = default;
